@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='utf-8'?>
+<odoo>
+    <menuitem
+        id="menu_main_pm_inherit"
+        name="Warehouse"
+        web_icon="project,static/description/icon.png"
+        action="action_view_project_kanban_filtered"
+        sequence="100"/>
+</odoo>

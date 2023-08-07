@@ -1,0 +1,55 @@
+<odoo>
+    <data>
+        <record id="project_project_form_inherit" model="ir.ui.view">
+            <field name="name">project.project.form.inherit</field>
+            <field name="model">project.project</field>
+            <field name="inherit_id" ref="project.edit_project"/>
+            <field name="arch" type="xml">
+                <field name="tag_ids" position="after">
+                    <field name="project_type"/>
+                </field>
+            </field>
+        </record>
+    </data>
+
+    <data>
+        <record id="project_project_form_simplified_inherit" model="ir.ui.view">
+            <field name="name">project.project.form.simplified.inherit</field>
+            <field name="model">project.project</field>
+            <field name="inherit_id" ref="project.project_project_view_form_simplified_footer"/>
+            <field name="arch" type="xml">
+                <field name="name" position="after">
+                    <field name="project_type" style="width: 15%%"/>
+                </field>
+            </field>
+        </record>
+    </data>
+
+    <data>
+        <record id="project_task_form2_inherit" model="ir.ui.view">
+            <field name="name">project.task.form2.inherit</field>
+            <field name="model">project.task</field>
+            <field name="inherit_id" ref="project.view_task_form2"/>
+            <field name="arch" type="xml">
+                <field name="parent_id" position="after">
+                    <field name="project_type"/>
+                </field>
+                <field name="parent_id" position="after">
+                    <field name="is_warehouse" attrs="{'invisible': True}"/>
+                </field>
+                <xpath expr="//notebook" position="inside">
+                    <page string="Products" name="products" attrs="{'invisible': [('is_warehouse', '==', False)]}">
+                        <field name="name"/>
+                    </page>
+                </xpath>
+            </field>
+        </record>
+    </data>
+
+    <record id="action_view_project_kanban_filtered" model="ir.actions.act_window">
+        <field name="name">Warehouse</field>
+        <field name="res_model">project.project</field>
+        <field name="view_mode">kanban,form</field>
+        <field name="domain">[('is_warehouse', '=', True)]</field>
+    </record>
+</odoo>
