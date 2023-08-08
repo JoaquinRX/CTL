@@ -10,8 +10,8 @@
     ],
     'data': [
         'data/ir.model.access.csv',
-        'views/menu.xml',
         'views/project.xml',
+        'views/menu.xml',
     ],
     'installable': True,
     'license': 'OPL-1',
