@@ -11,9 +11,9 @@
     'data': [
         'data/ir.model.access.csv',
         'views/project.xml',
+        'views/warehouse.xml',
         'views/menu.xml',
     ],
     'installable': True,
-    'license': 'OPL-1',
     'application': True,
 }

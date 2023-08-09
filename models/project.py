@@ -18,11 +18,19 @@ class ProjectInherit(models.Model):
         default=ProjectType.GENERAL.value)
 
     is_warehouse = fields.Boolean(string="Is warehouse", compute='_compute_is_warehouse', readonly=True, store=True)
+    warehouse_id = fields.Many2one('stock.warehouse', string="Warehouse pair")
 
     @api.depends('project_type')
     def _compute_is_warehouse(self):
         for project in self:
             project.is_warehouse = project.project_type == ProjectType.WAREHOUSE.value
+
+    @api.onchange('warehouse_id')
+    def _onchange_warehouse_id(self):
+        print(self._origin.id)
+        print(self.warehouse_id.id)
+        if self.warehouse_id:
+            self.warehouse_id.project_id = self._origin.id
 
 
 class TaskInherit(models.Model):
