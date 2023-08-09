@@ -27,10 +27,17 @@ class ProjectInherit(models.Model):
 
     @api.onchange('warehouse_id')
     def _onchange_warehouse_id(self):
-        print(self._origin.id)
-        print(self.warehouse_id.id)
-        if self.warehouse_id:
-            self.warehouse_id.project_id = self._origin.id
+        warehouses = self.env['stock.warehouse'].search([])
+        warehouses.compute_linked_project()
+
+    def write(self, values):
+        result = super(ProjectInherit, self).write(values)
+
+        if 'warehouse_id' in values:
+            warehouses = self.env['stock.warehouse'].search([])
+            warehouses.compute_linked_project()
+
+        return result
 
 
 class TaskInherit(models.Model):
