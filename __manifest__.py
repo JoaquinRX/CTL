@@ -6,7 +6,8 @@
     'author': 'Remixcom',
     'depends': [
         'base',
-        'project'
+        'project',
+        'stock'
     ],
     'data': [
         'data/ir.model.access.csv',

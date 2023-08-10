@@ -41,7 +41,7 @@
                 </field>
                 <xpath expr="//notebook" position="inside">
                     <page string="Products" name="products" attrs="{'invisible': [('is_warehouse', '==', False)]}">
-                        <field name="name"/>
+                        <field name="stock"/>
                     </page>
                 </xpath>
             </field>

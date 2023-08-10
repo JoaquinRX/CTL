@@ -1,2 +1,3 @@
 from . import project
-from . import warehouse
+from . import stock_warehouse
+from . import stock_location
