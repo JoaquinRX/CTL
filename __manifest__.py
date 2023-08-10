@@ -1,8 +1,8 @@
 {
     'name': 'CTL',
     'version': '1.0',
-    'summary': 'Odoo module for CTL customisations',
-    'description': 'Odoo module for CTL customisations',
+    'summary': 'Odoo module for CTL customizations',
+    'description': 'Odoo module for CTL customizations',
     'author': 'Remixcom',
     'depends': [
         'base',
