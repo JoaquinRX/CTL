@@ -68,6 +68,7 @@
                 <form>
                     <sheet>
                         <group>
+                            <field name="available_stock_ids" invisible='True'/>
                             <field name="stock_quant_id"/>
                             <field name="qty"/>
                         </group>

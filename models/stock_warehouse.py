@@ -6,7 +6,7 @@ class WarehouseInherit(models.Model):
     _inherit = 'stock.warehouse'
 
     project_id = fields.Many2one('project.project', string='Project pair', readonly=True, compute='compute_linked_project', store=True)
-    stock_ids = fields.Many2many(related='project_id.stock_ids', string='Stock')
+    stock_ids = fields.Many2many(related='project_id.available_stock_ids', string='Stock')
 
     def compute_linked_project(self):
         for warehouse in self:

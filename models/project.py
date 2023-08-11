@@ -19,7 +19,7 @@ class ProjectInherit(models.Model):
 
     is_warehouse = fields.Boolean(string="Is warehouse", compute='_compute_is_warehouse', readonly=True, store=True)
     warehouse_id = fields.Many2one('stock.warehouse', string="Warehouse pair")
-    stock_ids = fields.Many2many('stock.quant', compute='_compute_stock', store=True)
+    available_stock_ids = fields.Many2many('stock.quant', compute='_compute_stock', store=True)
 
     @api.depends('project_type')
     def _compute_is_warehouse(self):
@@ -31,7 +31,7 @@ class ProjectInherit(models.Model):
         matching_stock_quants = self.env['stock.quant'].search([
             ('location_id.warehouse_id.id', '=', self.warehouse_id.id)
         ])
-        self.stock_ids = matching_stock_quants
+        self.available_stock_ids = matching_stock_quants
 
     def write(self, values):
         result = super(ProjectInherit, self).write(values)
@@ -48,7 +48,7 @@ class TaskInherit(models.Model):
 
     project_type = fields.Selection(string="Type", related='project_id.project_type')
     is_warehouse = fields.Boolean(string="Is warehouse", related='project_id.is_warehouse', readonly=True)
-    stock_ids = fields.Many2many(related='project_id.stock_ids', string='Stock')
+    available_stock_ids = fields.Many2many(related='project_id.available_stock_ids', string='Stock')
     task_quant_ids = fields.One2many('project.task.quant', 'task_id', string='Task Quants')
 
     ticket = fields.Char(string="Ticket")
@@ -85,5 +85,6 @@ class TaskQaunt(models.Model):
     _name = 'project.task.quant'
 
     task_id = fields.Many2one('project.task', string='Task', readonly=True)
-    stock_quant_id = fields.Many2one('stock.quant', string='Stock')  # needs filter
+    available_stock_ids = fields.Many2many(related='task_id.available_stock_ids', string='Stock')
+    stock_quant_id = fields.Many2one('stock.quant', string='Stock', domain="[('id', 'in', available_stock_ids)]")
     qty = fields.Integer('Quantity')
