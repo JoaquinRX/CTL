@@ -41,8 +41,9 @@
                 </field>
                 <xpath expr="//notebook" position="inside">
                     <page string="Products" name="products" attrs="{'invisible': [('rx_is_warehouse', '==', False)]}">
-                        <field name="rx_task_quant_ids">
-                            <tree>
+                        <field name="rx_task_quant_ids" widget="one2many_list" nolabel="1" class="oe_inline oe_no_button">
+                            <tree editable="bottom">
+                                <field name="rx_available_stock_ids" invisible='True'/>
                                 <field name="rx_stock_quant_id"/>
                                 <field name="rx_qty"/>
                             </tree>
@@ -59,22 +60,4 @@
         <field name="view_mode">kanban,form</field>
         <field name="domain">[('rx_is_warehouse', '=', True)]</field>
     </record>
-
-    <data>
-        <record id="view_project_task_quants_form_custom" model="ir.ui.view">
-            <field name="name">project.task.quant.form.custom</field>
-            <field name="model">project.task.quant</field>
-            <field name="arch" type="xml">
-                <form>
-                    <sheet>
-                        <group>
-                            <field name="rx_available_stock_ids" invisible='True'/>
-                            <field name="rx_stock_quant_id"/>
-                            <field name="rx_qty"/>
-                        </group>
-                    </sheet>
-                </form>
-            </field>
-        </record>
-    </data>
 </odoo>

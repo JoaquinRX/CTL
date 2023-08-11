@@ -85,5 +85,5 @@ class TaskQaunt(models.Model):
 
     rx_task_id = fields.Many2one('project.task', string='Task', readonly=True)
     rx_available_stock_ids = fields.Many2many(related='rx_task_id.rx_available_stock_ids', string='Stock')
-    rx_stock_quant_id = fields.Many2one('stock.quant', string='Stock', domain="[('id', 'in', rx_available_stock_ids)]")
-    rx_qty = fields.Integer('Quantity', default=1)
+    rx_stock_quant_id = fields.Many2one('stock.quant', string='Stock', required=True, domain="[('id', 'in', rx_available_stock_ids)]")
+    rx_qty = fields.Integer('Quantity', required=True, default=1)
