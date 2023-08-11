@@ -6,9 +6,9 @@
             <field name="inherit_id" ref="project.edit_project"/>
             <field name="arch" type="xml">
                 <field name="tag_ids" position="after">
-                    <field name="project_type"/>
-                    <field name="is_warehouse" attrs="{'invisible': True}"/>
-                    <field name="warehouse_id" attrs="{'invisible': [('is_warehouse', '==', False)]}"/>
+                    <field name="rx_project_type"/>
+                    <field name="rx_is_warehouse" attrs="{'invisible': True}"/>
+                    <field name="rx_warehouse_id" attrs="{'invisible': [('rx_is_warehouse', '==', False)]}"/>
                 </field>
             </field>
         </record>
@@ -21,7 +21,7 @@
             <field name="inherit_id" ref="project.project_project_view_form_simplified_footer"/>
             <field name="arch" type="xml">
                 <field name="name" position="after">
-                    <field name="project_type" style="width: 15%%"/>
+                    <field name="rx_project_type" style="width: 15%%"/>
                 </field>
             </field>
         </record>
@@ -34,17 +34,17 @@
             <field name="inherit_id" ref="project.view_task_form2"/>
             <field name="arch" type="xml">
                 <field name="parent_id" position="after">
-                    <field name="project_type"/>
+                    <field name="rx_project_type"/>
                 </field>
                 <field name="parent_id" position="after">
-                    <field name="is_warehouse" attrs="{'invisible': True}"/>
+                    <field name="rx_is_warehouse" attrs="{'invisible': True}"/>
                 </field>
                 <xpath expr="//notebook" position="inside">
-                    <page string="Products" name="products" attrs="{'invisible': [('is_warehouse', '==', False)]}">
-                        <field name="task_quant_ids">
+                    <page string="Products" name="products" attrs="{'invisible': [('rx_is_warehouse', '==', False)]}">
+                        <field name="rx_task_quant_ids">
                             <tree>
-                                <field name="stock_quant_id"/>
-                                <field name="qty"/>
+                                <field name="rx_stock_quant_id"/>
+                                <field name="rx_qty"/>
                             </tree>
                         </field>
                     </page>
@@ -57,7 +57,7 @@
         <field name="name">Warehouse</field>
         <field name="res_model">project.project</field>
         <field name="view_mode">kanban,form</field>
-        <field name="domain">[('is_warehouse', '=', True)]</field>
+        <field name="domain">[('rx_is_warehouse', '=', True)]</field>
     </record>
 
     <data>
@@ -68,9 +68,9 @@
                 <form>
                     <sheet>
                         <group>
-                            <field name="available_stock_ids" invisible='True'/>
-                            <field name="stock_quant_id"/>
-                            <field name="qty"/>
+                            <field name="rx_available_stock_ids" invisible='True'/>
+                            <field name="rx_stock_quant_id"/>
+                            <field name="rx_qty"/>
                         </group>
                     </sheet>
                 </form>

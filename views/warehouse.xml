@@ -6,7 +6,7 @@
             <field name="inherit_id" ref="stock.view_warehouse"/>
             <field name="arch" type="xml">
                 <field name="code" position="after">
-                    <field name="project_id"/>
+                    <field name="rx_project_id"/>
                 </field>
             </field>
         </record>
