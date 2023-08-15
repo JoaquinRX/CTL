@@ -79,6 +79,15 @@ class TaskInherit(models.Model):
     rx_date_of_receipt = fields.Date(string="Estimated date of receipt")
     rx_provider = fields.Many2one('res.partner', string="Provider")
     rx_partner_address = fields.Char('Address', compute='_onchange_partner_id', readonly=True)
+    rx_origin_warehouse = fields.Many2one('stock.warehouse', string="Origin")
+    rx_destination_warehouse = fields.Many2one('stock.warehouse', string="Destination")
+    rx_who_returns = fields.Selection(
+        [
+            ('CRUM', 'CRUM'),
+            ('NODE', 'NODE'),
+            ('user', 'User'),
+            ('collaborator', 'Collaborator'),
+        ], string='Who returns')
 
     @api.depends('partner_id')
     def _onchange_partner_id(self):
