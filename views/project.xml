@@ -35,8 +35,6 @@
             <field name="arch" type="xml">
                 <field name="parent_id" position="after">
                     <field name="rx_project_type"/>
-                </field>
-                <field name="parent_id" position="after">
                     <field name="rx_is_warehouse" attrs="{'invisible': True}"/>
                 </field>
                 <xpath expr="//notebook" position="inside">

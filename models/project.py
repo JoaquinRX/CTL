@@ -75,9 +75,14 @@ class TaskInherit(models.Model):
             ('pick-up', 'Pick-up'),
         ], string="Logistic")
 
-    rx_final_location = fields.Many2one('stock.warehouse', string="Final location")
+    rx_final_location = fields.Many2one('stock.location', string="Final location")
     rx_date_of_receipt = fields.Date(string="Estimated date of receipt")
     rx_provider = fields.Many2one('res.partner', string="Provider")
+    rx_partner_address = fields.Char('Address', compute='_onchange_partner_id', readonly=True)
+
+    @api.depends('partner_id')
+    def _onchange_partner_id(self):
+        self.rx_partner_address = f'{self.partner_id.street}, {self.partner_id.city}, {self.partner_id.country_id.name}'
 
 
 class TaskQaunt(models.Model):
