@@ -41,7 +41,7 @@
                     <page string="Products" name="products" attrs="{'invisible': [('rx_is_warehouse', '==', False)]}">
                         <field name="rx_task_quant_ids" widget="one2many_list" nolabel="1" class="oe_inline oe_no_button">
                             <tree editable="bottom">
-                                <field name="rx_available_stock_ids" invisible='True'/>
+                                <field name="rx_available_stock_ids" attrs="{'column_invisible': True}"/>
                                 <field name="rx_stock_quant_id"/>
                                 <field name="rx_qty"/>
                             </tree>
