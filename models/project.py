@@ -83,8 +83,8 @@ class TaskInherit(models.Model):
     rx_destination_warehouse = fields.Many2one('stock.warehouse', string="Destination")
     rx_who_returns = fields.Selection(
         [
-            ('CRUM', 'CRUM'),
-            ('NODE', 'NODE'),
+            ('crum', 'CRUM'),
+            ('node', 'NODE'),
             ('user', 'User'),
             ('collaborator', 'Collaborator'),
         ], string='Who returns')
