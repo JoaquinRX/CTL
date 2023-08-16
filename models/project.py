@@ -39,7 +39,7 @@ class TaskInherit(models.Model):
     _inherit = 'project.task'
 
     rx_project_type = fields.Selection(string="Type", related='project_id.rx_project_type')
-    rx_task_quant_ids = fields.One2many('project.task.quant', 'rx_task_id', string='Task Quants')
+    rx_task_order_line_ids = fields.One2many('project.task.order.line', 'rx_task_id', string='Task Quants')
 
     rx_is_warehouse = fields.Boolean(string="Is warehouse", related='project_id.rx_is_warehouse', readonly=True)
     rx_warehouse_id = fields.Many2one(related='project_id.rx_warehouse_id', readonly=True)
@@ -87,20 +87,26 @@ class TaskInherit(models.Model):
     def _onchange_partner_id(self):
         self.rx_partner_address = f'{self.partner_id.street}, {self.partner_id.city}, {self.partner_id.country_id.name}'
 
-    @api.onchange('rx_task_quant_ids')
+    # rx_task_order_line_ids domain
+    @api.onchange('rx_task_order_line_ids')
     def _onchange_task_quant_ids(self):
-        for quant in self.rx_task_quant_ids:
-            quant.rx_available_stock_ids = self.env['stock.quant'].search([
+        for task_order_line in self.rx_task_order_line_ids:
+            task_order_line.rx_available_stock_ids = self.env['stock.quant'].search([
                 ('location_id.warehouse_id.id', '=', self.rx_warehouse_id.id)
             ])
 
 
-class TaskQaunt(models.Model):
-    _name = 'project.task.quant'
+class TaskOrderLine(models.Model):
+    _name = 'project.task.order.line'
 
     rx_task_id = fields.Many2one('project.task', string='Task', readonly=True)
     rx_warehouse_id = fields.Many2one(related='rx_task_id.rx_warehouse_id', readonly=True)
-    # rx_task_order_type = fields.Selection(related='rx_task_id.rx_order_type')
+    rx_task_order_type = fields.Selection(related='rx_task_id.rx_order_type')
+
+    # ('assets purchase', 'Asset purchase'),
+    # ('returns', 'Returns'),
+    # ('assets request', 'Assets request'),
+    # ('re-stock deposit', 'Re-stock deposit'),
 
     # stock search
     rx_available_stock_ids = fields.Many2many('stock.quant')
