@@ -84,7 +84,7 @@ class TaskInherit(models.Model):
 
     @api.onchange('rx_partner_id, partner_id')
     def _onchange_partner_id(self):
-        if self.partner_id:
+        if self.rx_partner_id:
             self.write({
                 'rx_partner_address': self.partner_id.contact_address
             })
