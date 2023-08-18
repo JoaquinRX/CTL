@@ -12,6 +12,7 @@
     'data': [
         'data/ir.model.access.csv',
         'views/project.xml',
+        'views/task.xml',
         'views/warehouse.xml',
         'views/menu.xml',
     ],

@@ -27,31 +27,6 @@
         </record>
     </data>
 
-    <data>
-        <record id="project_task_form2_inherit" model="ir.ui.view">
-            <field name="name">project.task.form2.inherit</field>
-            <field name="model">project.task</field>
-            <field name="inherit_id" ref="project.view_task_form2"/>
-            <field name="arch" type="xml">
-                <field name="parent_id" position="after">
-                    <field name="rx_project_type"/>
-                    <field name="rx_is_warehouse" attrs="{'invisible': True}"/>
-                </field>
-                <xpath expr="//notebook" position="inside">
-                    <page string="Products" name="products" attrs="{'invisible': [('rx_is_warehouse', '==', False)]}">
-                        <field name="rx_task_order_line_ids" widget="one2many_list" class="oe_inline oe_no_button">
-                            <tree editable="bottom" attrs="{'invisible': True}">
-                                <field name="rx_available_stock_ids" attrs="{'column_invisible': True}"/>
-                                <field name="rx_stock_quant_id"/>
-                                <field name="rx_product_template_ids"/>
-                                <field name="rx_qty"/>
-                            </tree>
-                        </field>
-                    </page>
-                </xpath>
-            </field>
-        </record>
-    </data>
 
     <record id="action_view_project_kanban_filtered" model="ir.actions.act_window">
         <field name="name">Warehouse</field>

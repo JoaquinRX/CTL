@@ -1,0 +1,34 @@
+<odoo>
+    <data>
+        <record id="project_task_form2_inherit" model="ir.ui.view">
+            <field name="name">project.task.form2.inherit</field>
+            <field name="model">project.task</field>
+            <field name="inherit_id" ref="project.view_task_form2"/>
+            <field name="arch" type="xml">
+
+                <field name="parent_id" position="after">
+                    <field name="rx_order_type"/>
+                    <field name="rx_partner_address"/>
+                    <field name="rx_project_type" attrs="{'invisible': True}"/>
+                    <field name="rx_is_warehouse" attrs="{'invisible': True}"/>
+                    <field name="partner_id" attrs="{'invisible': [('rx_is_warehouse', '==', True)]}"/>
+                </field>
+
+                <xpath expr="//notebook" position="inside">
+                    <page string="Products" name="products" attrs="{'invisible': [('rx_is_warehouse', '==', False)]}">
+                        <field name="rx_task_order_line_ids" widget="one2many_list" class="oe_inline oe_no_button">
+                            <tree editable="bottom" attrs="{'invisible': True}">
+                                <field name="rx_stock_quant_id" attrs="{'column_invisible': [('parent.rx_order_type', '!=', 're-stock deposit'), ('parent.rx_order_type', '!=', 'assets request')]}"/>
+                                <field name="rx_product_template_ids" attrs="{'column_invisible': [('parent.rx_order_type', '!=', 'assets purchase')]}"/>
+                                <field name="rx_qty"/>
+                                <field name="rx_available_stock_ids" attrs="{'column_invisible': True}"/>
+                            </tree>
+                        </field>
+                    </page>
+                </xpath>
+
+            </field>
+        </record>
+    </data>
+
+</odoo>

@@ -44,15 +44,15 @@ class TaskInherit(models.Model):
     rx_is_warehouse = fields.Boolean(string="Is warehouse", related='project_id.rx_is_warehouse', readonly=True)
     rx_warehouse_id = fields.Many2one(related='project_id.rx_warehouse_id', readonly=True)
 
-    rx_ticket = fields.Char(string="Ticket")
     rx_order_type = fields.Selection(
         [
             ('assets purchase', 'Asset purchase'),
             ('returns', 'Returns'),
             ('assets request', 'Assets request'),
             ('re-stock deposit', 'Re-stock deposit'),
-        ], string="Order type")
+        ], string="Order type", default='assets purchase', required=True)
 
+    rx_ticket = fields.Char(string="Ticket")
     rx_back_crum_node = fields.Boolean(string="Bring back CRUM/NODE")
     rx_refund_type = fields.Selection(
         [
@@ -85,10 +85,10 @@ class TaskInherit(models.Model):
 
     @api.depends('partner_id')
     def _onchange_partner_id(self):
-        self.rx_partner_address = f'{self.partner_id.street}, {self.partner_id.city}, {self.partner_id.country_id.name}'
+        self.rx_partner_address = self.partner_id.contact_address
 
     # rx_task_order_line_ids domain
-    @api.onchange('rx_task_order_line_ids')
+    @api.onchange('rx_task_order_line_ids', 'rx_order_type')
     def _onchange_task_quant_ids(self):
         for task_order_line in self.rx_task_order_line_ids:
             task_order_line.rx_available_stock_ids = self.env['stock.quant'].search([
@@ -108,7 +108,7 @@ class TaskOrderLine(models.Model):
     # ('assets request', 'Assets request'),
     # ('re-stock deposit', 'Re-stock deposit'),
 
-    # stock search
+    # assets request - re-stock deposit
     rx_available_stock_ids = fields.Many2many('stock.quant')
     rx_stock_quant_id = fields.Many2one('stock.quant', string='Stock', domain="[('id', 'in', rx_available_stock_ids)]")
 
@@ -116,5 +116,4 @@ class TaskOrderLine(models.Model):
     rx_product_template_ids = fields.Many2one('product.template', string='Product')
 
     # returns
-
     rx_qty = fields.Integer('Quantity', required=True, default=1)
