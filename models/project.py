@@ -53,7 +53,6 @@ class TaskInherit(models.Model):
         ], string="Order type", default='assets purchase', required=True)
 
     rx_ticket = fields.Char(string="Ticket")
-    rx_back_crum_node = fields.Boolean(string="Bring back CRUM/NODE")
     rx_refund_type = fields.Selection(
         [
             ('home pick-up', 'Home pick-up'),
@@ -75,25 +74,33 @@ class TaskInherit(models.Model):
     rx_partner_address = fields.Char('Address', compute='_onchange_partner_id', readonly=True)
     rx_origin_warehouse = fields.Many2one('stock.warehouse', string="Origin")
     rx_destination_warehouse = fields.Many2one('stock.warehouse', string="Destination")
+    rx_multiple_locations = fields.Boolean(string="Multiple locations")
     rx_who_returns = fields.Selection(
         [
             ('crum', 'CRUM'),
             ('node', 'NODE'),
-            ('user', 'User'),
-            ('collaborator', 'Collaborator'),
+            ('user/collaborator', 'User/Collaborator'),
         ], string='Who returns')
 
-    @api.depends('partner_id')
+    @api.onchange('rx_partner_id, partner_id')
     def _onchange_partner_id(self):
-        self.rx_partner_address = self.partner_id.contact_address
+        if self.partner_id:
+            self.write({
+                'rx_partner_address': self.partner_id.contact_address
+            })
 
-    # rx_task_order_line_ids domain
     @api.onchange('rx_task_order_line_ids', 'rx_order_type')
     def _onchange_task_quant_ids(self):
-        for task_order_line in self.rx_task_order_line_ids:
-            task_order_line.rx_available_stock_ids = self.env['stock.quant'].search([
-                ('location_id.warehouse_id.id', '=', self.rx_warehouse_id.id)
-            ])
+        quant_model = self.env['stock.quant']
+        warehouse_id = self.rx_warehouse_id.id
+
+        stock_quants = quant_model.search([
+            ('location_id.warehouse_id', '=', warehouse_id)
+        ])
+
+        self.rx_task_order_line_ids.write({
+            'rx_available_stock_ids': [(6, 0, stock_quants.ids)]
+        })
 
 
 class TaskOrderLine(models.Model):
