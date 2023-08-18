@@ -84,10 +84,7 @@ class TaskInherit(models.Model):
 
     @api.onchange('rx_partner_id, partner_id')
     def _onchange_partner_id(self):
-        if self.rx_partner_id:
-            self.write({
-                'rx_partner_address': self.partner_id.contact_address
-            })
+        self.rx_partner_address = self.rx_partner_id.contact_address
 
     @api.onchange('rx_task_order_line_ids', 'rx_order_type')
     def _onchange_task_quant_ids(self):
