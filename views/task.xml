@@ -8,8 +8,8 @@
 
                 <field name="parent_id" position="after">
                     <field name="rx_order_type"/>
-                    <field name="rx_partner_id"/>
                     <field name="rx_who_returns" attrs="{'invisible': [('rx_order_type', '!=', 'returns')]}"/>
+                    <field name="rx_partner_id"/>
                     <field name="rx_partner_address"/>
                     <field name="partner_id" attrs="{'invisible': [('rx_is_warehouse', '==', True)]}"/>
                     <field name="rx_project_type" attrs="{'invisible': True}"/>
@@ -20,12 +20,22 @@
                     <page string="Products" name="products" attrs="{'invisible': [('rx_is_warehouse', '==', False)]}">
                         <field name="rx_task_order_line_ids" widget="one2many_list" class="oe_inline oe_no_button">
                             <tree editable="bottom" attrs="{'invisible': True}">
+                                <field name="rx_is_done"/>
                                 <field name="rx_stock_quant_id" attrs="{'column_invisible': [('parent.rx_order_type', '!=', 're-stock deposit'), ('parent.rx_order_type', '!=', 'assets request'), ('parent.rx_order_type', '!=', 'returns')]}"/>
                                 <field name="rx_product_template_ids" attrs="{'column_invisible': [('parent.rx_order_type', '!=', 'assets purchase')]}"/>
+                                <field name="rx_location_id" attrs="{'column_invisible': [('parent.rx_order_type', '==', 'assets purchase')]}"/>
                                 <field name="rx_qty"/>
                                 <field name="rx_available_stock_ids" attrs="{'column_invisible': True}"/>
                             </tree>
                         </field>
+                    <form>
+                        <div style="display: flex; justify-content: flex-end; align-items: center;">
+                            <label for="rx_total_count" style="margin-right: 20px; font-size: 16px;;">Total:</label>
+                            <span style="font-weight: bold; font-size: 22px;">
+                                <field name="rx_total_count"/>
+                            </span>
+                        </div>
+                    </form>
                     </page>
                 </xpath>
 
