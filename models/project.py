@@ -87,14 +87,33 @@ class TaskInherit(models.Model):
     def _onchange_partner_id(self):
         self.rx_partner_address = self.rx_partner_id.contact_address
 
-    @api.onchange('rx_task_order_line_ids', 'rx_order_type')
+    @api.onchange('rx_order_type', 'rx_who_returns')
+    def _onchange_clear_task_order_line_ids(self):
+        self.rx_task_order_line_ids = [(5, 0, 0)]
+
+    @api.onchange('rx_task_order_line_ids', 'rx_order_type', 'rx_who_returns')
     def _onchange_task_quant_ids(self):
         quant_model = self.env['stock.quant']
+        stock_quants = self.env['stock.quant']
+
+        order_type = self.rx_order_type
+        who_returns = self.rx_who_returns
         warehouse_id = self.rx_warehouse_id.id
 
-        stock_quants = quant_model.search([
-            ('location_id.warehouse_id', '=', warehouse_id)
-        ])
+        if order_type in ['re-stock deposit', 'assets request']:
+            stock_quants = quant_model.search([
+                ('location_id.warehouse_id', '=', warehouse_id)
+            ])
+
+        elif order_type == 'returns':
+            if who_returns == 'user/collaborator':
+                stock_quants = quant_model.search([
+                    ('location_id.usage', '=', 'customer')
+                ])
+            elif who_returns in ['crum', 'node']:
+                stock_quants = quant_model.search([
+                    ('location_id.warehouse_id', '=', warehouse_id)
+                ])
 
         self.rx_available_stock_ids = [(6, 0, stock_quants.ids)]
 
