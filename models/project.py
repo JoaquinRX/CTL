@@ -43,6 +43,7 @@ class TaskInherit(models.Model):
 
     rx_is_warehouse = fields.Boolean(string="Is warehouse", related='project_id.rx_is_warehouse', readonly=True)
     rx_warehouse_id = fields.Many2one(related='project_id.rx_warehouse_id', readonly=True)
+    rx_available_stock_ids = fields.Many2many('stock.quant')
 
     rx_order_type = fields.Selection(
         [
@@ -95,9 +96,7 @@ class TaskInherit(models.Model):
             ('location_id.warehouse_id', '=', warehouse_id)
         ])
 
-        self.rx_task_order_line_ids.write({
-            'rx_available_stock_ids': [(6, 0, stock_quants.ids)]
-        })
+        self.rx_available_stock_ids = [(6, 0, stock_quants.ids)]
 
 
 class TaskOrderLine(models.Model):
@@ -113,7 +112,7 @@ class TaskOrderLine(models.Model):
     # ('re-stock deposit', 'Re-stock deposit'),
 
     # assets request - re-stock deposit
-    rx_available_stock_ids = fields.Many2many('stock.quant')
+    rx_available_stock_ids = fields.Many2many('stock.quant', related='rx_task_id.rx_available_stock_ids')
     rx_stock_quant_id = fields.Many2one('stock.quant', string='Stock', domain="[('id', 'in', rx_available_stock_ids)]")
 
     # assets purchase
