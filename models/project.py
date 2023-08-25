@@ -101,6 +101,14 @@ class TaskInherit(models.Model):
     def _onchange_partner_id(self):
         self.rx_partner_address = self.rx_partner_id.contact_address
 
+    @api.onchange('rx_task_order_line_ids')
+    def _onchange_task_order_line_ids(self):
+        if self.rx_task_order_line_ids:
+            unique_locations = self.rx_task_order_line_ids.mapped('rx_final_location')
+            if len(unique_locations) <= 1:
+                for line in self.rx_task_order_line_ids:
+                    line.rx_final_location = self.rx_final_location
+
     @api.onchange('rx_order_type', 'rx_who_returns', 'rx_origin_warehouse')
     def _onchange_clear_task_order_line_ids(self):
         self.rx_task_order_line_ids = [(5, 0, 0)]
@@ -141,7 +149,7 @@ class TaskInherit(models.Model):
 class TaskOrderLine(models.Model):
     _name = 'project.task.order.line'
 
-    rx_task_id = fields.Many2one('project.task', string='Task', readonly=True)
+    rx_task_id = fields.Many2one('project.task', string='Task')
     rx_warehouse_id = fields.Many2one(related='rx_task_id.rx_warehouse_id', readonly=True)
     rx_task_order_type = fields.Selection(related='rx_task_id.rx_order_type')
 
@@ -154,5 +162,11 @@ class TaskOrderLine(models.Model):
     # assets purchase
     rx_product_template_ids = fields.Many2one('product.template', string='Product')
 
+    rx_available_quant = fields.Float(string='Available', related='rx_stock_quant_id.available_quantity')
     rx_location_id = fields.Many2one('stock.location', string='Location', related='rx_stock_quant_id.location_id')
+    rx_final_location = fields.Many2one('stock.location', string='Final location', default=lambda self: self._default_final_location())
     rx_qty = fields.Integer('Quantity', required=True, default=1)
+
+    def _default_final_location(self):
+        if self.rx_task_id and self.rx_task_id.rx_final_location:
+            return self.rx_task_id.rx_final_location.id

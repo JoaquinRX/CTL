@@ -10,6 +10,7 @@
                     <field name="rx_order_type"/>
                     <field name="rx_who_returns" attrs="{'invisible': [('rx_order_type', '!=', 'returns')]}"/>
                     <field name="rx_origin_warehouse" attrs="{'invisible': [('rx_order_type', '!=', 'returns')]}"/>
+                    <field name="rx_final_location"/>
                     <field name="rx_partner_address"/>
                     <field name="partner_id" attrs="{'invisible': [('rx_is_warehouse', '==', True)]}"/>
                     <field name="rx_project_type" attrs="{'invisible': True}"/>
@@ -24,6 +25,8 @@
                                 <field name="rx_stock_quant_id" attrs="{'column_invisible': [('parent.rx_order_type', '!=', 're-stock deposit'), ('parent.rx_order_type', '!=', 'assets request'), ('parent.rx_order_type', '!=', 'returns')]}"/>
                                 <field name="rx_product_template_ids" attrs="{'column_invisible': [('parent.rx_order_type', '!=', 'assets purchase')]}"/>
                                 <field name="rx_location_id" attrs="{'column_invisible': [('parent.rx_order_type', '==', 'assets purchase')]}"/>
+                                <field name="rx_final_location"/>
+                                <field name="rx_available_quant"/>
                                 <field name="rx_qty"/>
                                 <field name="rx_available_stock_ids" attrs="{'column_invisible': True}"/>
                             </tree>
