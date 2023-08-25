@@ -7,6 +7,19 @@ class ProjectType(Enum):
     GENERAL = 'General'
 
 
+PROJECT_WAREHOUSE_STAGES = {
+    'Nuevo',
+    'Pendiente a retirar',
+    'Pendiente a recibir',
+    'Mesa de entrada',
+    'Pick',
+    'Verificacion tecnica',
+    'Mesa de envios',
+    'En transito',
+    'Finalizado',
+}
+
+
 class ProjectInherit(models.Model):
     _name = 'project.project'
     _inherit = 'project.project'
@@ -88,11 +101,11 @@ class TaskInherit(models.Model):
     def _onchange_partner_id(self):
         self.rx_partner_address = self.rx_partner_id.contact_address
 
-    @api.onchange('rx_order_type', 'rx_who_returns')
+    @api.onchange('rx_order_type', 'rx_who_returns', 'rx_origin_warehouse')
     def _onchange_clear_task_order_line_ids(self):
         self.rx_task_order_line_ids = [(5, 0, 0)]
 
-    @api.onchange('rx_task_order_line_ids', 'rx_order_type', 'rx_who_returns')
+    @api.onchange('rx_task_order_line_ids', 'rx_order_type', 'rx_who_returns', 'rx_origin_warehouse')
     def _onchange_task_quant_ids(self):
         quant_model = self.env['stock.quant']
         stock_quants = self.env['stock.quant']
@@ -113,7 +126,7 @@ class TaskInherit(models.Model):
                 ])
             elif who_returns in ['crum', 'node']:
                 stock_quants = quant_model.search([
-                    ('location_id.warehouse_id', '=', warehouse_id)
+                    ('location_id.warehouse_id', '=', self.rx_origin_warehouse.id)
                 ])
 
         self.rx_available_stock_ids = [(6, 0, stock_quants.ids)]
