@@ -21,7 +21,7 @@
                 <xpath expr="//notebook" position="inside">
                     <page string="Products" name="products" attrs="{'invisible': [('rx_is_warehouse', '==', False)]}">
                         <field name="rx_task_order_line_ids" widget="one2many_list" class="oe_inline oe_no_button">
-                            <tree editable="bottom" attrs="{'invisible': True}">
+                            <tree editable="bottom">
                                 <field name="rx_is_done"/>
                                 <field name="rx_stock_quant_id" attrs="{'column_invisible': [('parent.rx_order_type', '!=', 're-stock deposit'), ('parent.rx_order_type', '!=', 'assets request'), ('parent.rx_order_type', '!=', 'returns')]}"/>
                                 <field name="rx_product_template_ids" attrs="{'column_invisible': [('parent.rx_order_type', '!=', 'assets purchase')]}"/>

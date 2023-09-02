@@ -9,8 +9,8 @@ class ProjectType(Enum):
 
 PROJECT_WAREHOUSE_STAGES = {
     'Nuevo',
-    'Pendiente a retirar',
-    'Pendiente a recibir',
+    'Pendiente retirar',
+    'Pendiente recibir',
     'Mesa de entrada',
     'Pick',
     'Verificacion tecnica',
@@ -103,6 +103,9 @@ class TaskInherit(models.Model):
 
     @api.onchange('rx_task_order_line_ids')
     def _onchange_task_order_line_ids(self):
+        if (not self.rx_final_location):
+            return
+
         if self.rx_task_order_line_ids:
             unique_locations = self.rx_task_order_line_ids.mapped('rx_final_location')
             if len(unique_locations) <= 1:
@@ -124,7 +127,8 @@ class TaskInherit(models.Model):
 
         if order_type in ['re-stock deposit', 'assets request']:
             stock_quants = quant_model.search([
-                ('location_id.warehouse_id', '=', warehouse_id)
+                ('location_id.warehouse_id', '=', warehouse_id),
+                ('location_id.usage', '!=', 'transit')
             ])
 
         elif order_type == 'returns':
@@ -134,16 +138,111 @@ class TaskInherit(models.Model):
                 ])
             elif who_returns in ['crum', 'node']:
                 stock_quants = quant_model.search([
-                    ('location_id.warehouse_id', '=', self.rx_origin_warehouse.id)
+                    ('location_id.warehouse_id', '=', self.rx_origin_warehouse.id),
+                    ('location_id.usage', '!=', 'transit')
                 ])
 
         self.rx_available_stock_ids = [(6, 0, stock_quants.ids)]
+
+    @api.onchange('stage_id')
+    def _onchange_stage_id_assets_request(self):
+        if (self.rx_order_type == 'assets request'):
+            self.print_order_stage()
+
+    @api.onchange('stage_id')
+    def _onchange_stage_id_returns(self):
+        if (self.rx_order_type == 'returns'):
+            self.print_order_stage()
+
+    @api.onchange('stage_id')
+    def _onchange_stage_id_assets_purchase(self):
+        if (self.rx_order_type == 'assets purchase'):
+            self.print_order_stage()
+
+    @api.onchange('stage_id')
+    def _onchange_stage_id_re_stock_deposit(self):
+        if (self.rx_order_type == 're-stock deposit'):
+            if (not self.check_all_lines_done()):
+                return self.revert_stage_change(title='Re-stock', message='Todas las lineas tienen que estar confirmadas para poder continuar.')
+
+            # In transit logic
+            if (self.stage_id.name == 'MESA DE ENVIOS'
+                    or self.stage_id.name == 'PENDIENTE RETIRAR'
+                    or self.stage_id.name == 'MESA DE ENTRADA'
+                    or self.stage_id.name == 'EN TRANSITO'):
+
+                location_dest_id = self.env['stock.location'].search(
+                    [
+                        ('warehouse_id', '=', self.rx_warehouse_id.id),
+                        ('usage', '=', 'transit'),
+                    ], limit=1)
+                for line in self.rx_task_order_line_ids:
+                    self.transfer_stock(line, location_dest_id)
+                    new_stock_quant = self.env['stock.quant'].search(
+                        [
+                            ('product_id', '=', line.rx_stock_quant_id.product_id.id),
+                            ('location_id.usage', '=', 'transit'),
+                        ], limit=1)
+
+                    line.rx_stock_quant_id = new_stock_quant
+
+            # Finalized logic
+            elif (self.stage_id.name == 'FINALIZADO'):
+                for line in self.rx_task_order_line_ids:
+                    self.transfer_stock(line, line.rx_final_location)
+                    new_stock_quant = self.env['stock.quant'].search(
+                        [
+                            ('product_id', '=', line.rx_stock_quant_id.product_id.id),
+                        ], limit=1)
+
+                    line.rx_stock_quant_id = new_stock_quant
+
+    def transfer_stock(self, line, final_location):
+        picking_type_id = self.env['stock.picking.type'].search(
+            [
+                ('warehouse_id', '=', self.rx_warehouse_id.id),
+                ('code', '=', 'internal'),
+            ], limit=1)
+
+        picking = self.env['stock.picking'].create({
+            'picking_type_id': picking_type_id.id,
+            'location_id': line.rx_location_id.id,
+            'location_dest_id': final_location.id,
+            'move_ids_without_package': [(0, 0, {
+                'product_id': line.rx_stock_quant_id.product_id.id,
+                'name': line.rx_stock_quant_id.product_id.name,
+                'description_picking': line.rx_stock_quant_id.product_id.name,
+                'location_id': line.rx_location_id.id,
+                'location_dest_id': final_location.id,
+                'product_uom': line.rx_stock_quant_id.product_id.uom_id.id,
+                'quantity_done': line.rx_qty,
+                'product_uom_qty': line.rx_qty,
+            })]
+        })
+        picking.action_confirm()
+        picking.button_validate()
+
+    def check_all_lines_done(self):
+        return all(line.rx_is_done for line in self.rx_task_order_line_ids)
+
+    # needs to be returned. return self.revert_stage_change('', '')
+    def revert_stage_change(self, title, message):
+        self.stage_id = self._origin.stage_id
+        return {
+            'warning': {
+                'title': title,
+                'message': message,
+            }
+        }
 
     @api.depends('rx_task_order_line_ids')
     def _compute_total_count(self):
         for record in self:
             total_count = sum(record.rx_task_order_line_ids.mapped('rx_qty'))
             record.rx_total_count = total_count
+
+    def print_order_stage(self):
+        print(self.stage_id.name)
 
 
 class TaskOrderLine(models.Model):
@@ -164,9 +263,5 @@ class TaskOrderLine(models.Model):
 
     rx_available_quant = fields.Float(string='Available', related='rx_stock_quant_id.available_quantity')
     rx_location_id = fields.Many2one('stock.location', string='Location', related='rx_stock_quant_id.location_id')
-    rx_final_location = fields.Many2one('stock.location', string='Final location', default=lambda self: self._default_final_location())
+    rx_final_location = fields.Many2one('stock.location', string='Final location')
     rx_qty = fields.Integer('Quantity', required=True, default=1)
-
-    def _default_final_location(self):
-        if self.rx_task_id and self.rx_task_id.rx_final_location:
-            return self.rx_task_id.rx_final_location.id
