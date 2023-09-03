@@ -204,7 +204,8 @@ class TaskInherit(models.Model):
                     ], limit=1)
 
                     line.rx_stock_quant_id = new_stock_quant
-            else:
+
+            elif (self.stage_id.name == 'PENDIENTE RECIBIR' or self.stage_id.name == 'VERIFICACION TECNICA'):
                 return self.revert_stage_change(title='Re-stock', message=f'No puede pasar una orden de re-stock a la etapa de {self.stage_id.name}')
 
     def transfer_stock(self, line, final_location):
