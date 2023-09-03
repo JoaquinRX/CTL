@@ -8,15 +8,15 @@ class ProjectType(Enum):
 
 
 PROJECT_WAREHOUSE_STAGES = {
-    'Nuevo',
-    'Pendiente retirar',
-    'Pendiente recibir',
-    'Mesa de entrada',
-    'Pick',
-    'Verificacion tecnica',
-    'Mesa de envios',
-    'En transito',
-    'Finalizado',
+    'NUEVO',
+    'PENDIENTE RETIRAR',
+    'PENDIENTE RECIBIR',
+    'MESA DE ENTRADA',
+    'PICK',
+    'VERIFICACION TECNICA',
+    'MESA DE ENVIOS',
+    'EN TRANSITO',
+    'FINALIZADO',
 }
 
 
@@ -162,6 +162,12 @@ class TaskInherit(models.Model):
     @api.onchange('stage_id')
     def _onchange_stage_id_re_stock_deposit(self):
         if (self.rx_order_type == 're-stock deposit'):
+            if (self._origin.stage_id.name == 'FINALIZADO'):
+                return self.revert_stage_change(title='Re-stock', message=f'La orden ya esta en el estado {self._origin.stage_id.name}')
+
+            if (self.stage_id.name == 'NUEVO' and self._origin.stage_id.name != 'NUEVO'):
+                return self.revert_stage_change(title='Re-stock', message=f'La orden no puede volver a el estado {self.stage_id.name}')
+
             if (not self.check_all_lines_done()):
                 return self.revert_stage_change(title='Re-stock', message='Todas las lineas tienen que estar confirmadas para poder continuar.')
 
@@ -171,16 +177,17 @@ class TaskInherit(models.Model):
                     or self.stage_id.name == 'MESA DE ENTRADA'
                     or self.stage_id.name == 'EN TRANSITO'):
 
-                location_dest_id = self.env['stock.location'].search(
-                    [
-                        ('warehouse_id', '=', self.rx_warehouse_id.id),
-                        ('usage', '=', 'transit'),
-                    ], limit=1)
+                location_dest_id = self.env['stock.location'].search([
+                    ('warehouse_id', '=', self.rx_warehouse_id.id),
+                    ('usage', '=', 'transit')
+                ], limit=1)
+
                 for line in self.rx_task_order_line_ids:
                     self.transfer_stock(line, location_dest_id)
                     new_stock_quant = self.env['stock.quant'].search(
                         [
                             ('product_id', '=', line.rx_stock_quant_id.product_id.id),
+                            ('location_id.warehouse_id', '=', line.rx_location_id.warehouse_id.id),
                             ('location_id.usage', '=', 'transit'),
                         ], limit=1)
 
@@ -190,12 +197,15 @@ class TaskInherit(models.Model):
             elif (self.stage_id.name == 'FINALIZADO'):
                 for line in self.rx_task_order_line_ids:
                     self.transfer_stock(line, line.rx_final_location)
-                    new_stock_quant = self.env['stock.quant'].search(
-                        [
-                            ('product_id', '=', line.rx_stock_quant_id.product_id.id),
-                        ], limit=1)
+
+                    new_stock_quant = self.env['stock.quant'].search([
+                        ('product_id', '=', line.rx_stock_quant_id.product_id.id),
+                        ('location_id', '=', line.rx_final_location.id)
+                    ], limit=1)
 
                     line.rx_stock_quant_id = new_stock_quant
+            else:
+                return self.revert_stage_change(title='Re-stock', message=f'No puede pasar una orden de re-stock a la etapa de {self.stage_id.name}')
 
     def transfer_stock(self, line, final_location):
         picking_type_id = self.env['stock.picking.type'].search(
