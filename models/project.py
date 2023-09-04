@@ -8,15 +8,15 @@ class ProjectType(Enum):
 
 
 PROJECT_WAREHOUSE_STAGES = {
-    'NUEVO',
-    'PENDIENTE RETIRAR',
-    'PENDIENTE RECIBIR',
-    'MESA DE ENTRADA',
-    'PICK',
-    'VERIFICACION TECNICA',
-    'MESA DE ENVIOS',
-    'EN TRANSITO',
-    'FINALIZADO',
+    'Nuevo',
+    'Pendiente retirar',
+    'Pendiente recibir',
+    'Mesa de entrada',
+    'Pick',
+    'Verificacion tecnica',
+    'Mesa de enviios',
+    'En transito',
+    'Finalizado',
 }
 
 
@@ -162,29 +162,29 @@ class TaskInherit(models.Model):
     @api.onchange('stage_id')
     def _onchange_stage_id_re_stock_deposit(self):
         if (self.rx_order_type == 're-stock deposit'):
-            if (self._origin.stage_id.name == 'FINALIZADO'):
+            if (self._origin.stage_id.name == 'Finalizado'):
                 return self.revert_stage_change(title='Re-stock', message=f'La orden ya esta en el estado {self._origin.stage_id.name}')
 
             if (not self.check_available_quant()):
                 return self.revert_stage_change(title='Re-stock', message='La cantidad seleccionada no puede ser mayor a la disponible.')
 
-            if (self.stage_id.name == 'NUEVO'):
-                if (not self._origin.stage_id.name == 'PICK'):
+            if (self.stage_id.name == 'Nuevo'):
+                if (not self._origin.stage_id.name == 'Pick'):
                     return self.revert_stage_change(title='Re-stock', message=f'La orden no puede volver a el estado {self.stage_id.name}')
                 else:
                     return
 
-            if (self.stage_id.name == 'PICK'):
+            if (self.stage_id.name == 'Pick'):
                 return
 
             if (not self.check_all_lines_done()):
                 return self.revert_stage_change(title='Re-stock', message='Todas las lineas tienen que estar confirmadas para poder continuar.')
 
             # In transit logic
-            if (self.stage_id.name == 'MESA DE ENVIOS'
-                    or self.stage_id.name == 'PENDIENTE RETIRAR'
-                    or self.stage_id.name == 'MESA DE ENTRADA'
-                    or self.stage_id.name == 'EN TRANSITO'):
+            if (self.stage_id.name == 'Mesa de envios'
+                    or self.stage_id.name == 'Pendiente retirar'
+                    or self.stage_id.name == 'Mesa de entrada'
+                    or self.stage_id.name == 'En transito'):
 
                 location_dest_id = self.env['stock.location'].search([
                     ('warehouse_id', '=', self.rx_warehouse_id.id),
@@ -203,7 +203,7 @@ class TaskInherit(models.Model):
                     line.rx_stock_quant_id = new_stock_quant
 
             # Finalized logic
-            elif (self.stage_id.name == 'FINALIZADO'):
+            elif (self.stage_id.name == 'Finalizado'):
                 for line in self.rx_task_order_line_ids:
                     self.transfer_stock(line, line.rx_final_location)
 
@@ -214,7 +214,7 @@ class TaskInherit(models.Model):
 
                     line.rx_stock_quant_id = new_stock_quant
 
-            elif (self.stage_id.name == 'PENDIENTE RECIBIR' or self.stage_id.name == 'VERIFICACION TECNICA'):
+            elif (self.stage_id.name == 'Pendiente recibir' or self.stage_id.name == 'Verificacion tecnica'):
                 return self.revert_stage_change(title='Re-stock', message=f'No puede pasar una orden de re-stock a la etapa de {self.stage_id.name}')
 
     def transfer_stock(self, line, final_location):
