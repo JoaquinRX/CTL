@@ -165,8 +165,17 @@ class TaskInherit(models.Model):
             if (self._origin.stage_id.name == 'FINALIZADO'):
                 return self.revert_stage_change(title='Re-stock', message=f'La orden ya esta en el estado {self._origin.stage_id.name}')
 
-            if (self.stage_id.name == 'NUEVO' and self._origin.stage_id.name != 'NUEVO'):
-                return self.revert_stage_change(title='Re-stock', message=f'La orden no puede volver a el estado {self.stage_id.name}')
+            if (not self.check_available_quant()):
+                return self.revert_stage_change(title='Re-stock', message='La cantidad seleccionada no puede ser mayor a la disponible.')
+
+            if (self.stage_id.name == 'NUEVO'):
+                if (not self._origin.stage_id.name == 'PICK'):
+                    return self.revert_stage_change(title='Re-stock', message=f'La orden no puede volver a el estado {self.stage_id.name}')
+                else:
+                    return
+
+            if (self.stage_id.name == 'PICK'):
+                return
 
             if (not self.check_all_lines_done()):
                 return self.revert_stage_change(title='Re-stock', message='Todas las lineas tienen que estar confirmadas para poder continuar.')
@@ -235,6 +244,9 @@ class TaskInherit(models.Model):
 
     def check_all_lines_done(self):
         return all(line.rx_is_done for line in self.rx_task_order_line_ids)
+
+    def check_available_quant(self):
+        return all(line.rx_available_quant >= line.rx_qty for line in self.rx_task_order_line_ids)
 
     # needs to be returned. return self.revert_stage_change('', '')
     def revert_stage_change(self, title, message):
