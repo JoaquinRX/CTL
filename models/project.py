@@ -152,7 +152,57 @@ class TaskInherit(models.Model):
     @api.onchange('stage_id')
     def _onchange_stage_id_returns(self):
         if (self.rx_order_type == 'returns'):
-            self.print_order_stage()
+            if (self._origin.stage_id.name == 'Finalizado'):
+                return self.revert_stage_change(title='Devolucion', message=f'La orden ya esta en el estado {self._origin.stage_id.name}')
+
+            if (not self.check_available_quant()):
+                return self.revert_stage_change(title='Devolucion', message='La cantidad seleccionada no puede ser mayor a la disponible.')
+
+            if (self.stage_id.name == 'Nuevo'):
+                if (not self._origin.stage_id.name == 'Pick'):
+                    return self.revert_stage_change(title='Devolucion', message=f'La orden no puede volver a el estado {self.stage_id.name}')
+                else:
+                    return
+
+            if (self.stage_id.name == 'Pick'):
+                return
+
+            if (not self.check_all_lines_done()):
+                return self.revert_stage_change(title='Devolucion', message='Todas las lineas tienen que estar confirmadas para poder continuar.')
+
+            # In transit logic
+            if (self.stage_id.name == 'Mesa de envios'
+                    or self.stage_id.name == 'Pendiente retirar'
+                    or self.stage_id.name == 'Mesa de entrada'
+                    or self.stage_id.name == 'En transito'):
+
+                location_dest_id = self.env['stock.location'].search([
+                    ('warehouse_id', '=', self.rx_warehouse_id.id),
+                    ('usage', '=', 'transit')
+                ], limit=1)
+
+                for line in self.rx_task_order_line_ids:
+                    self.transfer_stock(line, location_dest_id)
+                    new_stock_quant = self.env['stock.quant'].search(
+                        [
+                            ('product_id', '=', line.rx_stock_quant_id.product_id.id),
+                            ('location_id.warehouse_id', '=', line.rx_location_id.warehouse_id.id),
+                            ('location_id.usage', '=', 'transit'),
+                        ], limit=1)
+
+                    line.rx_stock_quant_id = new_stock_quant
+
+            # Finalized logic
+            elif (self.stage_id.name == 'Finalizado'):
+                for line in self.rx_task_order_line_ids:
+                    self.transfer_stock(line, line.rx_final_location)
+
+                    new_stock_quant = self.env['stock.quant'].search([
+                        ('product_id', '=', line.rx_stock_quant_id.product_id.id),
+                        ('location_id', '=', line.rx_final_location.id)
+                    ], limit=1)
+
+                    line.rx_stock_quant_id = new_stock_quant
 
     @api.onchange('stage_id')
     def _onchange_stage_id_assets_purchase(self):
