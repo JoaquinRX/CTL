@@ -15,9 +15,9 @@
                     <field name="rx_final_location"/>
                     <field name="rx_partner_id"/>
                     <field name="rx_partner_address"/>
-                    <field name="rx_is_sub_order"/>
-                    <field name="rx_parent_order_id"/>
-                    <field name="rx_sub_order_id"/>
+                    <field name="rx_is_sub_order" attrs="{'readonly': True}"/>
+                    <field name="rx_parent_order_id" attrs="{'readonly': True}"/>
+                    <field name="rx_sub_order_id" attrs="{'readonly': True}"/>
                     <field name="rx_partner_address"/>
                     <field name="rx_project_type" attrs="{'invisible': True}"/>
                     <field name="rx_is_warehouse" attrs="{'invisible': True}"/>
