@@ -54,6 +54,10 @@ class TaskInherit(models.Model):
     rx_project_type = fields.Selection(string="Type", related='project_id.rx_project_type')
     rx_task_order_line_ids = fields.One2many('project.task.order.line', 'rx_task_id', string='Task Quants')
 
+    rx_is_sub_order = fields.Boolean(string="Is sub order", readonly=True)
+    rx_sub_order_id = fields.Many2one('project.task', string='Sub order', readonly=True)
+    rx_parent_order_id = fields.Many2one('project.task', string='Parent order', readonly=True)
+
     rx_is_warehouse = fields.Boolean(string="Is warehouse", related='project_id.rx_is_warehouse', readonly=True)
     rx_warehouse_id = fields.Many2one(related='project_id.rx_warehouse_id', readonly=True)
     rx_available_stock_ids = fields.Many2many('stock.quant')
@@ -236,6 +240,12 @@ class TaskInherit(models.Model):
                     or self.stage_id.name == 'Mesa de entrada'
                     or self.stage_id.name == 'En transito'):
 
+                if (self.rx_is_sub_order):
+                    return self.revert_stage_change(title='Re-stock', message='La sub-orden no puede estar en el estado {self.stage_id.name}')
+
+                if (not self.rx_destination_warehouse):
+                    return self.revert_stage_change(title='Re-stock', message='Debe seleccionar un almacén de destino.')
+
                 location_dest_id = self.env['stock.location'].search([
                     ('warehouse_id', '=', self.rx_warehouse_id.id),
                     ('usage', '=', 'transit')
@@ -252,8 +262,37 @@ class TaskInherit(models.Model):
 
                     line.rx_stock_quant_id = new_stock_quant
 
+                project_id = self.env['project.project'].search([('rx_warehouse_id', '=', self.rx_destination_warehouse.id)], limit=1)
+                stage_id = self.env['project.task.type'].search([('name', '=', 'Pendiente recibir'), ('project_ids', 'in', [self.project_id.id])], limit=1)
+                sub_order_id = self.env['project.task'].create({
+                    'project_id': project_id.id,
+                    'name': f'{self.name} sub-orden',
+                    'stage_id': stage_id.id,
+                    'rx_is_sub_order': True,
+                    'rx_parent_order_id': self._origin.id,
+                    'rx_warehouse_id': self.rx_destination_warehouse.id,
+                    'rx_task_order_line_ids': [(0, 0, {
+                        'rx_task_id': line.rx_task_id.id,
+                        'rx_stock_quant_id': line.rx_stock_quant_id.id,
+                        'rx_qty': line.rx_qty,
+                        'rx_location_id': line.rx_location_id.id,
+                        'rx_final_location': line.rx_final_location.id,
+                        'rx_is_done': line.rx_is_done,
+                    }) for line in self.rx_task_order_line_ids],
+                    'rx_order_type': self.rx_order_type,
+                    'rx_who_returns': self.rx_who_returns,
+                    'rx_origin_warehouse': self.rx_origin_warehouse.id,
+                    'rx_final_location': self.rx_final_location.id,
+                })
+
+                self.rx_sub_order_id = sub_order_id.id
+                print(self.rx_sub_order_id)
+
             # Finalized logic
             elif (self.stage_id.name == 'Finalizado'):
+                if (not self.rx_is_sub_order):
+                    return
+
                 for line in self.rx_task_order_line_ids:
                     self.transfer_stock(line, line.rx_final_location)
 
@@ -263,6 +302,18 @@ class TaskInherit(models.Model):
                     ], limit=1)
 
                     line.rx_stock_quant_id = new_stock_quant
+
+                self.rx_parent_order_id.write({'rx_task_order_line_ids': [(5, 0, 0)]})
+                self.rx_parent_order_id.write({
+                    'rx_task_order_line_ids': [(0, 0, {
+                        'rx_task_id': self.rx_parent_order_id.id,
+                        'rx_is_done': line.rx_is_done,
+                        'rx_stock_quant_id': line.rx_stock_quant_id.id,
+                        'rx_location_id': line.rx_location_id.id,
+                        'rx_final_location': line.rx_final_location.id,
+                        'rx_qty': line.rx_qty,
+                    }) for line in self.rx_task_order_line_ids],
+                })
 
             elif (self.stage_id.name == 'Pendiente recibir' or self.stage_id.name == 'Verificacion tecnica'):
                 return self.revert_stage_change(title='Re-stock', message=f'No puede pasar una orden de re-stock a la etapa de {self.stage_id.name}')
