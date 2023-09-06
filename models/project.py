@@ -216,6 +216,7 @@ class TaskInherit(models.Model):
     @api.onchange('stage_id')
     def _onchange_stage_id_re_stock_deposit(self):  # noqa: C901
         if (self.rx_order_type == 're-stock deposit'):
+            #  change stage limitations
             if (self._origin.stage_id.name == 'Finalizado'):
                 return self.revert_stage_change(title='Re-stock', message=f'La orden ya esta en el estado {self._origin.stage_id.name}')
             elif (not self.check_available_quant()):
@@ -232,11 +233,11 @@ class TaskInherit(models.Model):
             elif (self.stage_id.name == 'Pendiente recibir' or self.stage_id.name == 'Verificacion tecnica'):
                 return self.revert_stage_change(title='Re-stock', message=f'No puede pasar una orden de re-stock a la etapa de {self.stage_id.name}')
 
-            # Logic
+            # change stage logic
             if (self.rx_is_sub_order):
                 if (not self.stage_id.name == 'Finalizado'):
                     return self.revert_stage_change(title='Re-stock', message='La sub-orden solo puede finalizarse')
-                if (self.stage_id.name == 'Finalizado'):
+                else:
                     for line in self.rx_task_order_line_ids:
                         self.transfer_stock(line, line.rx_final_location)
                         new_stock_quant = self.env['stock.quant'].search([('product_id', '=', line.rx_stock_quant_id.product_id.id), ('location_id', '=', line.rx_final_location.id)], limit=1)
@@ -253,7 +254,8 @@ class TaskInherit(models.Model):
                             'rx_qty': line.rx_qty,
                         }) for line in self.rx_task_order_line_ids],
                     })
-            else:
+
+            else:  # is not sub-order
                 if (not self.rx_sub_order_id):
                     if (self.stage_id.name in ['Mesa de envios', 'Pendiente retirar', 'Mesa de entrada', 'En transito']):
                         if (not self.rx_destination_warehouse):
