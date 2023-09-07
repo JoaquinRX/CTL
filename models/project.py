@@ -270,7 +270,7 @@ class TaskInherit(models.Model):
                         })
                         self.env['project.task'].search([('id', '=', self._origin.id)], limit=1).write({'rx_sub_order_id': sub_order_id.id})
 
-                    elif (self.stage_id.name in ['Mesa de envios'] and self.rx_who_returns == 'user/collaborator'):
+                    elif (self.stage_id.name in ['Mesa de entrada'] and self.rx_who_returns == 'user/collaborator'):
                         location_dest_id = self.env['stock.location'].search([('warehouse_id', '=', self.rx_warehouse_id.id), ('usage', '=', 'transit')], limit=1)
                         for line in self.rx_task_order_line_ids:
                             self.transfer_stock(line, location_dest_id)
