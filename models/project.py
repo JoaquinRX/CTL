@@ -130,21 +130,13 @@ class TaskInherit(models.Model):
         warehouse_id = self.rx_warehouse_id.id
 
         if order_type in ['re-stock deposit', 'assets request']:
-            stock_quants = quant_model.search([
-                ('location_id.warehouse_id', '=', warehouse_id),
-                ('location_id.usage', '!=', 'transit')
-            ])
+            stock_quants = quant_model.search([('location_id.warehouse_id', '=', warehouse_id), ('location_id.usage', '!=', 'transit')])
 
         elif order_type == 'returns':
             if who_returns == 'user/collaborator':
-                stock_quants = quant_model.search([
-                    ('location_id.usage', '=', 'customer')
-                ])
+                stock_quants = quant_model.search([('location_id.usage', '=', 'customer')])
             elif who_returns in ['crum', 'node']:
-                stock_quants = quant_model.search([
-                    ('location_id.warehouse_id', '=', self.rx_origin_warehouse.id),
-                    ('location_id.usage', '!=', 'transit')
-                ])
+                stock_quants = quant_model.search([('location_id.warehouse_id', '=', self.rx_origin_warehouse.id)])
         self.rx_available_stock_ids = [(5, 0, 0)]
         self.rx_available_stock_ids = [(6, 0, stock_quants.ids)]
 
@@ -183,7 +175,7 @@ class TaskInherit(models.Model):
                     line.rx_stock_quant_id = new_stock_quant
 
     @api.onchange('stage_id')
-    def _onchange_stage_id_returns(self):
+    def _onchange_stage_id_returns(self):  # noqa: C901
         if (self.rx_order_type == 'returns'):
             #  change stage limitations
             if (self._origin.stage_id.name == 'Finalizado'):
@@ -202,12 +194,11 @@ class TaskInherit(models.Model):
 
             # change stage logic
             if (self.rx_is_sub_order):
-                if (not self.stage_id.name == 'Finalizado'):
-                    return self.revert_stage_change(title='Re-stock', message='La sub-orden solo puede finalizarse')
-                else:
+                if (self.stage_id.name == 'Finalizado'):
+                    location_dest_id = self.env['stock.location'].search([('warehouse_id', '=', self.rx_parent_order_id.rx_warehouse_id.id), ('usage', '=', 'transit')], limit=1)
                     for line in self.rx_task_order_line_ids:
-                        self.transfer_stock(line, line.rx_final_location)
-                        new_stock_quant = self.env['stock.quant'].search([('product_id', '=', line.rx_stock_quant_id.product_id.id), ('location_id', '=', line.rx_final_location.id)], limit=1)
+                        self.transfer_stock(line, location_dest_id)
+                        new_stock_quant = self.env['stock.quant'].search([('product_id', '=', line.rx_stock_quant_id.product_id.id), ('location_id', '=', location_dest_id.id)], limit=1)
                         line.rx_stock_quant_id = new_stock_quant
 
                     self.rx_parent_order_id.write({'rx_task_order_line_ids': [(5, 0, 0)]})
@@ -228,10 +219,10 @@ class TaskInherit(models.Model):
                         if (not self.rx_destination_warehouse):
                             return self.revert_stage_change(title='Devolucion', message='Debe seleccionar un almacén de destino.')
 
-                        location_dest_id = self.env['stock.location'].search([('warehouse_id', '=', self.rx_warehouse_id.id), ('usage', '=', 'transit')], limit=1)
+                        location_dest_id = self.env['stock.location'].search([('warehouse_id', '=', self.rx_origin_warehouse.id), ('usage', '=', 'transit')], limit=1)
                         for line in self.rx_task_order_line_ids:
                             self.transfer_stock(line, location_dest_id)
-                            new_stock_quant = self.env['stock.quant'].search([('product_id', '=', line.rx_stock_quant_id.product_id.id), ('location_id.warehouse_id', '=', line.rx_location_id.warehouse_id.id), ('location_id.usage', '=', 'transit')], limit=1)
+                            new_stock_quant = self.env['stock.quant'].search([('product_id', '=', line.rx_stock_quant_id.product_id.id), ('location_id', '=', location_dest_id.id)], limit=1)
                             line.rx_stock_quant_id = new_stock_quant
 
                         project_id = self.env['project.project'].search([('rx_warehouse_id', '=', self.rx_destination_warehouse.id)], limit=1)
@@ -256,7 +247,25 @@ class TaskInherit(models.Model):
                             'rx_origin_warehouse': self.rx_origin_warehouse.id,
                             'rx_final_location': self.rx_final_location.id,
                         })
-                        self.rx_sub_order_id = sub_order_id.id
+                        self.env['project.task'].search([('id', '=', self._origin.id)], limit=1).write({'rx_sub_order_id': sub_order_id.id})
+
+                if (self.stage_id.name == 'Finalizado'):
+                    for line in self.rx_task_order_line_ids:
+                        self.transfer_stock(line, line.rx_final_location)
+                        new_stock_quant = self.env['stock.quant'].search([('product_id', '=', line.rx_stock_quant_id.product_id.id), ('location_id', '=', line.rx_final_location.id)], limit=1)
+                        line.rx_stock_quant_id = new_stock_quant
+
+                    self.rx_sub_order_id.write({'rx_task_order_line_ids': [(5, 0, 0)]})
+                    self.rx_sub_order_id.write({
+                        'rx_task_order_line_ids': [(0, 0, {
+                            'rx_task_id': self.rx_sub_order_id.id,
+                            'rx_is_done': line.rx_is_done,
+                            'rx_stock_quant_id': line.rx_stock_quant_id.id,
+                            'rx_location_id': line.rx_location_id.id,
+                            'rx_final_location': line.rx_final_location.id,
+                            'rx_qty': line.rx_qty,
+                        }) for line in self.rx_task_order_line_ids],
+                    })
 
     @api.onchange('stage_id')
     def _onchange_stage_id_assets_purchase(self):
@@ -339,7 +348,7 @@ class TaskInherit(models.Model):
                             'rx_origin_warehouse': self.rx_origin_warehouse.id,
                             'rx_final_location': self.rx_final_location.id,
                         })
-                        self.rx_sub_order_id = sub_order_id.id
+                        self.env['project.task'].search([('id', '=', self._origin.id)], limit=1).write({'rx_sub_order_id': sub_order_id.id})
 
     def transfer_stock(self, line, final_location):
         picking_type_id = self.env['stock.picking.type'].search(
