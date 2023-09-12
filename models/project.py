@@ -158,7 +158,7 @@ class TaskInherit(models.Model):
             elif (not self.check_all_lines_done()):
                 return self.revert_stage_change(title='Pedido de activos', message='Todas las lineas tienen que estar confirmadas para poder continuar.')
             elif (self.stage_id.name == 'Pendiente recibir' or self.stage_id.name == 'Verificacion tecnica'):
-                return self.revert_stage_change(title='Pedido de activos', message=f'No puede pasar una orden de re-stock a la etapa de {self.stage_id.name}')
+                return self.revert_stage_change(title='Pedido de activos', message=f'No puede pasar una orden de pedido de activos a la etapa de {self.stage_id.name}')
 
             # change stage logic
             if (self.stage_id.name in ['Mesa de envios', 'Pendiente retirar', 'Mesa de entrada', 'En transito']):
@@ -293,7 +293,7 @@ class TaskInherit(models.Model):
             elif (not self.check_all_lines_done()):
                 return self.revert_stage_change(title='Compra de activos', message='Todas las lineas tienen que estar confirmadas para poder continuar.')
             elif (self.stage_id.name == 'Pendiente recibir' or self.stage_id.name == 'Verificacion tecnica'):
-                return self.revert_stage_change(title='Compra de activos', message=f'No puede pasar una orden de re-stock a la etapa de {self.stage_id.name}')
+                return self.revert_stage_change(title='Compra de activos', message=f'No puede pasar una orden compra de activos a la etapa de {self.stage_id.name}')
 
             # change stage logic
             if (self.stage_id.name in ['Mesa de envios', 'Pendiente retirar', 'Mesa de entrada', 'En transito']):
