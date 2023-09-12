@@ -280,7 +280,37 @@ class TaskInherit(models.Model):
     @api.onchange('stage_id')
     def _onchange_stage_id_assets_purchase(self):
         if (self.rx_order_type == 'assets purchase'):
-            self.print_order_stage()
+            #  change stage limitations
+            if (self._origin.stage_id.name == 'Finalizado'):
+                return self.revert_stage_change(title='Compra de activos', message=f'La orden ya esta en el estado {self._origin.stage_id.name}')
+            elif (self.stage_id.name == 'Nuevo'):
+                if (not self._origin.stage_id.name == 'Pick'):
+                    return self.revert_stage_change(title='Compra de activos', message=f'La orden no puede volver a el estado {self.stage_id.name}')
+                else:
+                    return
+            elif (self.stage_id.name == 'Pick'):
+                return
+            elif (not self.check_all_lines_done()):
+                return self.revert_stage_change(title='Compra de activos', message='Todas las lineas tienen que estar confirmadas para poder continuar.')
+            elif (self.stage_id.name == 'Pendiente recibir' or self.stage_id.name == 'Verificacion tecnica'):
+                return self.revert_stage_change(title='Compra de activos', message=f'No puede pasar una orden de re-stock a la etapa de {self.stage_id.name}')
+
+            # change stage logic
+            if (self.stage_id.name in ['Mesa de envios', 'Pendiente retirar', 'Mesa de entrada', 'En transito']):
+                location_origin = self.env['stock.location'].search([('name', '=', 'Vendors'), ('usage', '=', 'supplier')], limit=1)
+                location_dest_id = self.env['stock.location'].search([('warehouse_id', '=', self.rx_warehouse_id.id), ('usage', '=', 'transit')], limit=1)
+                for line in self.rx_task_order_line_ids:
+                    if (line.rx_stock_quant_id):
+                        return
+                    self.transfer_product(line, location_origin, location_dest_id)
+                    new_stock_quant = self.env['stock.quant'].search([('product_id', '=', line.rx_product_id.id), ('location_id.warehouse_id', '=', location_dest_id.warehouse_id.id), ('location_id.usage', '=', 'transit')], limit=1)
+                    line.rx_stock_quant_id = new_stock_quant
+
+            elif (self.stage_id.name == 'Finalizado'):
+                for line in self.rx_task_order_line_ids:
+                    self.transfer_stock(line, line.rx_final_location)
+                    new_stock_quant = self.env['stock.quant'].search([('product_id', '=', line.rx_stock_quant_id.product_id.id), ('location_id', '=', line.rx_final_location.id)], limit=1)
+                    line.rx_stock_quant_id = new_stock_quant
 
     @api.onchange('stage_id')
     def _onchange_stage_id_re_stock_deposit(self):  # noqa: C901
@@ -368,6 +398,7 @@ class TaskInherit(models.Model):
             ], limit=1)
 
         picking = self.env['stock.picking'].create({
+            'partner_id': self.rx_provider.id,
             'picking_type_id': picking_type_id.id,
             'location_id': line.rx_location_id.id,
             'location_dest_id': final_location.id,
@@ -378,6 +409,32 @@ class TaskInherit(models.Model):
                 'location_id': line.rx_location_id.id,
                 'location_dest_id': final_location.id,
                 'product_uom': line.rx_stock_quant_id.product_id.uom_id.id,
+                'quantity_done': line.rx_qty,
+                'product_uom_qty': line.rx_qty,
+            })]
+        })
+        picking.action_confirm()
+        picking.button_validate()
+
+    def transfer_product(self, line, origin_location, final_location):
+        picking_type_id = self.env['stock.picking.type'].search(
+            [
+                ('warehouse_id', '=', self.rx_warehouse_id.id),
+                ('code', '=', 'internal'),
+            ], limit=1)
+
+        picking = self.env['stock.picking'].create({
+            'partner_id': self.rx_provider.id,
+            'picking_type_id': picking_type_id.id,
+            'location_id': origin_location.id,
+            'location_dest_id': final_location.id,
+            'move_ids_without_package': [(0, 0, {
+                'product_id': line.rx_product_id.id,
+                'name': line.rx_product_id.name,
+                'description_picking': line.rx_product_id.name,
+                'location_id': origin_location.id,
+                'location_dest_id': final_location.id,
+                'product_uom': line.rx_product_id.uom_id.id,
                 'quantity_done': line.rx_qty,
                 'product_uom_qty': line.rx_qty,
             })]
@@ -425,7 +482,7 @@ class TaskOrderLine(models.Model):
     rx_stock_quant_id = fields.Many2one('stock.quant', string='Stock', domain="[('id', 'in', rx_available_stock_ids)]")
 
     # assets purchase
-    rx_product_template_ids = fields.Many2one('product.template', string='Product')
+    rx_product_id = fields.Many2one('product.product', string='Product')
 
     rx_available_quant = fields.Float(string='Available', related='rx_stock_quant_id.available_quantity')
     rx_location_id = fields.Many2one('stock.location', string='Location', related='rx_stock_quant_id.location_id')
