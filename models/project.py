@@ -34,6 +34,26 @@ class ProjectInherit(models.Model):
     rx_is_warehouse = fields.Boolean(string="Is warehouse", compute='_compute_is_warehouse', readonly=True, store=True)
     rx_warehouse_id = fields.Many2one('stock.warehouse', string="Warehouse pair")
 
+    rx_count_pending_withdrawal = fields.Char(string="Pending withdrawal", compute='_compute_count_pending_withdrawal')
+    rx_count_pending_receive = fields.Char(string="Pending receive", compute='_compute_count_pending_receive')
+
+    def _compute_count_pending_withdrawal(self):
+
+        for project in self:
+            if not project.rx_is_warehouse:
+                project.rx_count_pending_withdrawal = ''
+                continue
+            count = len(self.env['project.task'].search([('project_id', '=', project.id), ('stage_id.name', '=', 'Pendiente retirar')]))
+            project.rx_count_pending_withdrawal = f'Pendiente retirar: {count}'
+
+    def _compute_count_pending_receive(self):
+        for project in self:
+            if not project.rx_is_warehouse:
+                project.rx_count_pending_receive = ''
+                continue
+            count = len(self.env['project.task'].search([('project_id', '=', project.id), ('stage_id.name', '=', 'Pendiente recibir')]))
+            project.rx_count_pending_receive = f'Pendiente recibir: {count}'
+
     @api.depends('rx_project_type')
     def _compute_is_warehouse(self):
         for project in self:

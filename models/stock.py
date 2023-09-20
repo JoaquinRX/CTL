@@ -1,6 +1,4 @@
 from odoo import models, fields
-from odoo.tools.float_utils import float_compare, float_is_zero, float_round
-from odoo.exceptions import UserError
 
 
 class WarehouseInherit(models.Model):

@@ -27,6 +27,19 @@
         </record>
     </data>
 
+    <data>
+        <record id="project_view_project_kanban_inherit" model="ir.ui.view">
+            <field name="name">project.view.project.kanban.inherit</field>
+            <field name="model">project.project</field>
+            <field name="inherit_id" ref="project.view_project_kanban"/>
+            <field name="arch" type="xml">
+                <xpath expr="//kanban[1]/templates[1]/t[1]/div[1]/div[1]/div[1]/div[1]/div[1]/field[@name='tag_ids']" position="after">
+                    <field name="rx_count_pending_withdrawal" display="full"/>
+                    <field name="rx_count_pending_receive" display="full"/>
+                </xpath>
+            </field>
+        </record>
+    </data>
 
     <record id="action_view_project_kanban_filtered" model="ir.actions.act_window">
         <field name="name">Warehouse</field>
