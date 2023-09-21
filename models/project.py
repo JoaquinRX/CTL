@@ -38,7 +38,6 @@ class ProjectInherit(models.Model):
     rx_count_pending_receive = fields.Char(string="Pending receive", compute='_compute_count_pending_receive')
 
     def _compute_count_pending_withdrawal(self):
-
         for project in self:
             if not project.rx_is_warehouse:
                 project.rx_count_pending_withdrawal = ''
@@ -90,7 +89,7 @@ class TaskInherit(models.Model):
             ('returns', 'Returns'),
             ('assets request', 'Assets request'),
             ('re-stock deposit', 'Re-stock deposit'),
-        ], string="Order type", default='assets purchase', required=True)
+        ], string="Order type")
 
     rx_ticket = fields.Char(string="Ticket")
     rx_refund_type = fields.Selection(
@@ -122,8 +121,25 @@ class TaskInherit(models.Model):
             ('user/collaborator', 'User/Collaborator'),
         ], string='Who returns')
 
+    @api.onchange('rx_final_location')
+    def _onchange_final_location(self):
+        for line in self.rx_task_order_line_ids:
+            line.rx_final_location = self.rx_final_location
+
+    @api.onchange('rx_order_type')
+    def _onchange_order_type(self):
+        if (self.rx_order_type == 'assets request'):
+            location_origin = self.env['stock.location'].search([('name', '=', 'Customers'), ('usage', '=', 'customer')], limit=1)
+            self.rx_final_location = location_origin
+        elif (self.rx_order_type == 'assets purchase'):
+            location_origin = self.env['stock.location'].search([('name', '=', 'Mesa de entrada'), ('location_id.name', '=', 'PATAG')], limit=1)
+            self.rx_final_location = location_origin
+
     @api.onchange('rx_task_order_line_ids')
     def _onchange_task_order_line_ids(self):
+
+        if (not self.rx_order_type and len(self.rx_task_order_line_ids) > 0):
+            raise UserError('Debe seleccionar el tipo de orden')
         if (not self.rx_final_location):
             return
 
@@ -607,7 +623,5 @@ class TaskOrderLine(models.Model):
 
     @api.onchange('rx_stock_quant_id')
     def _onchange_rx_stock_quant_id(self):
-        self.rx_product_id = self.rx_stock_quant_id.product_id
-
         if (self.rx_stock_quant_id.lot_id):
             self.rx_lot_ids = self.rx_stock_quant_id.lot_id
