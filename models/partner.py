@@ -11,6 +11,7 @@ class PartnerInherit(models.Model):
     def _compute_product_line_ids(self):
         self.rx_product_line_ids = self.env['product.line']
         products = {}
+        products_lots = {}
         for task in self.env['project.task'].search([('rx_partner_id', '=', self.id), ('stage_id.name', '=', 'Finalizado')]):
             inverter = 1
             if (task.rx_order_type == 'returns'):
@@ -23,6 +24,11 @@ class PartnerInherit(models.Model):
                 else:
                     products[product] = line.rx_qty * inverter
 
+                if products_lots.get(product):
+                    products_lots[product] += line.rx_lot_ids.ids
+                else:
+                    products_lots[product] = line.rx_lot_ids.ids
+
         for key, value in products.items():
             product_id = self.env['product.product'].search([('id', '=', key)])
             line = self.env['product.line'].create({
@@ -30,6 +36,7 @@ class PartnerInherit(models.Model):
                 'rx_product_name': product_id.name,
                 'rx_product_id': key,
                 'rx_qty': value,
+                'rx_lot_ids': products_lots[key]
             })
             if not product_id == line.rx_product_id:
                 self.rx_product_line_ids += line
