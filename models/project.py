@@ -432,6 +432,8 @@ class TaskInherit(models.Model):
                 return self.revert_stage_change(title='Re-stock', message=f'No puede pasar una orden de re-stock a la etapa de {self.stage_id.name}')
             elif (not self.check_all_lines_final_location()):
                 return self.revert_stage_change(title='Re-stock', message='Todas las lineas tienen que tener una ubicacion final')
+            elif (not self.rx_destination_warehouse):
+                return self.revert_stage_change(title='Re-stock', message='Debe seleccionar un almacén de destino para crear la sub orden')
 
             # change stage logic
             if (self.rx_is_sub_order):
@@ -479,6 +481,7 @@ class TaskInherit(models.Model):
                                 'rx_is_sub_order': True,
                                 'rx_parent_order_id': self._origin.id,
                                 'rx_warehouse_id': self.rx_destination_warehouse.id,
+                                'rx_destination_warehouse': self.rx_destination_warehouse.id,
                                 'rx_task_order_line_ids': [(0, 0, {
                                     'rx_task_id': line.rx_task_id.id,
                                     'rx_stock_quant_id': line.rx_stock_quant_id.id,

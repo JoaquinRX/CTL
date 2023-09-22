@@ -11,7 +11,7 @@ class PartnerInherit(models.Model):
     def _compute_product_line_ids(self):
         self.rx_product_line_ids = self.env['product.line']
         products = {}
-        for task in self.env['project.task'].search([('rx_partner_id', '=', self.id)]):
+        for task in self.env['project.task'].search([('rx_partner_id', '=', self.id), ('stage_id.name', '=', 'Finalizado')]):
             inverter = 1
             if (task.rx_order_type == 'returns'):
                 inverter = -1

@@ -11,6 +11,7 @@
                             <tree editable="bottom">
                                 <field name="rx_product_name"/>
                                 <field name="rx_qty"/>
+                                <field name="rx_lot_ids" widget="many2many_tags"/>
                             </tree>
                         </field>
                     </page>
