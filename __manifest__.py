@@ -7,10 +7,12 @@
     'depends': [
         'base',
         'project',
-        'stock'
+        'stock',
+        'contacts',
     ],
     'data': [
         'data/ir.model.access.csv',
+        'views/partner.xml',
         'views/project.xml',
         'views/task.xml',
         'views/warehouse.xml',
