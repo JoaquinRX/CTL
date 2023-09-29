@@ -199,7 +199,10 @@ class TaskInherit(models.Model):
             # change stage logic
             if (self.stage_id.name in ['Mesa de envios', 'Pendiente retirar', 'Mesa de entrada', 'En transito']):
                 def transfer_prod():
-                    location_dest_id = self.env['stock.location'].search([('warehouse_id', '=', self.rx_warehouse_id.id), ('usage', '=', 'transit')], limit=1)
+
+                    location_dest_id = self.env['stock.location'].search([('warehouse_id', '=', self.rx_warehouse_id.id), ('usage', '=', 'transit'), ('name', '=', self.stage_id.name)], limit=1)
+                    if not location_dest_id:
+                        location_dest_id = self.env['stock.location'].search([('warehouse_id', '=', self.rx_warehouse_id.id), ('usage', '=', 'transit')], limit=1)
                     for line in self.rx_task_order_line_ids:
                         self.transfer_stock(line, location_dest_id)
                         new_stock_quant = self.env['stock.quant'].search([('product_id', '=', line.rx_stock_quant_id.product_id.id), ('location_id.warehouse_id', '=', line.rx_location_id.warehouse_id.id), ('location_id.usage', '=', 'transit')], limit=1)
@@ -243,10 +246,10 @@ class TaskInherit(models.Model):
                     return
             elif (self.stage_id.name == 'Pick'):
                 return
-            elif (not self.check_all_lines_done()):
+            elif (not self.check_all_lines_done() and self.stage_id.name not in ['Pendiente retirar', 'Mesa de envios']):
                 return self.revert_stage_change(title='Devolucion', message='Todas las lineas tienen que estar confirmadas para poder continuar.')
             elif (not self.check_all_lines_final_location()):
-                return self.revert_stage_change(title='Re-stock', message='Todas las lineas tienen que tener una ubicacion final')
+                return self.revert_stage_change(title='Devolucion', message='Todas las lineas tienen que tener una ubicacion final')
 
             # change stage logic
             if (self.rx_is_sub_order):
@@ -300,7 +303,9 @@ class TaskInherit(models.Model):
                             return self.revert_stage_change(title='Devolucion', message='Debe seleccionar un almacén de destino.')
 
                         def transfer_prod():
-                            location_dest_id = self.env['stock.location'].search([('warehouse_id', '=', self.rx_origin_warehouse.id), ('usage', '=', 'transit')], limit=1)
+                            location_dest_id = self.env['stock.location'].search([('warehouse_id', '=', self.rx_warehouse_id.id), ('usage', '=', 'transit'), ('name', '=', self.stage_id.name)], limit=1)
+                            if not location_dest_id:
+                                location_dest_id = self.env['stock.location'].search([('warehouse_id', '=', self.rx_origin_warehouse.id), ('usage', '=', 'transit')], limit=1)
                             for line in self.rx_task_order_line_ids:
                                 self.transfer_stock(line, location_dest_id)
                                 new_stock_quant = self.env['stock.quant'].search([('product_id', '=', line.rx_stock_quant_id.product_id.id), ('location_id', '=', location_dest_id.id)], limit=1)
@@ -349,7 +354,9 @@ class TaskInherit(models.Model):
                             self._force_change_stage('En transito')
 
                     elif (self.stage_id.name in ['Mesa de entrada'] and self.rx_who_returns == 'user/collaborator'):
-                        location_dest_id = self.env['stock.location'].search([('warehouse_id', '=', self.rx_warehouse_id.id), ('usage', '=', 'transit')], limit=1)
+                        location_dest_id = self.env['stock.location'].search([('warehouse_id', '=', self.rx_warehouse_id.id), ('usage', '=', 'transit'), ('name', '=', self.stage_id.name)], limit=1)
+                        if not location_dest_id:
+                            location_dest_id = self.env['stock.location'].search([('warehouse_id', '=', self.rx_warehouse_id.id), ('usage', '=', 'transit')], limit=1)
                         for line in self.rx_task_order_line_ids:
                             self.transfer_stock(line, location_dest_id)
                             new_stock_quant = self.env['stock.quant'].search([('product_id', '=', line.rx_stock_quant_id.product_id.id), ('location_id', '=', location_dest_id.id)], limit=1)
@@ -369,9 +376,9 @@ class TaskInherit(models.Model):
                     return
             elif (self.stage_id.name == 'Pick'):
                 return
-            elif (not self.check_all_lines_done()):
+            elif (not self.check_all_lines_done() and self.stage_id.name not in ['Pendiente recibir', 'Pendiente retirar', 'Mesa de envios']):
                 return self.revert_stage_change(title='Compra de activos', message='Todas las lineas tienen que estar confirmadas para poder continuar.')
-            elif (self.stage_id.name == 'Pendiente recibir' or self.stage_id.name == 'Verificacion tecnica'):
+            elif (self.stage_id.name == 'Verificacion tecnica'):
                 return self.revert_stage_change(title='Compra de activos', message=f'No puede pasar una orden compra de activos a la etapa de {self.stage_id.name}')
             elif (not self.check_all_lines_final_location()):
                 return self.revert_stage_change(title='Re-stock', message='Todas las lineas tienen que tener una ubicacion final')
@@ -380,7 +387,9 @@ class TaskInherit(models.Model):
             if (self.stage_id.name in ['Mesa de envios', 'Pendiente retirar', 'Mesa de entrada', 'En transito']):
                 def transfer_prod():
                     location_origin = self.env['stock.location'].search([('name', '=', 'Vendors'), ('usage', '=', 'supplier')], limit=1)
-                    location_dest_id = self.env['stock.location'].search([('warehouse_id', '=', self.rx_warehouse_id.id), ('usage', '=', 'transit')], limit=1)
+                    location_dest_id = self.env['stock.location'].search([('warehouse_id', '=', self.rx_warehouse_id.id), ('usage', '=', 'transit'), ('name', '=', self.stage_id.name)], limit=1)
+                    if not location_dest_id:
+                        location_dest_id = self.env['stock.location'].search([('warehouse_id', '=', self.rx_warehouse_id.id), ('usage', '=', 'transit')], limit=1)
                     for line in self.rx_task_order_line_ids:
                         if (line.rx_stock_quant_id):
                             return
@@ -466,7 +475,9 @@ class TaskInherit(models.Model):
                             return self.revert_stage_change(title='Re-stock', message='Debe seleccionar un almacén de destino.')
 
                         def transfer_prod():
-                            location_dest_id = self.env['stock.location'].search([('warehouse_id', '=', self.rx_warehouse_id.id), ('usage', '=', 'transit')], limit=1)
+                            location_dest_id = self.env['stock.location'].search([('warehouse_id', '=', self.rx_warehouse_id.id), ('usage', '=', 'transit'), ('name', '=', self.stage_id.name)], limit=1)
+                            if not location_dest_id:
+                                location_dest_id = self.env['stock.location'].search([('warehouse_id', '=', self.rx_warehouse_id.id), ('usage', '=', 'transit')], limit=1)
                             for line in self.rx_task_order_line_ids:
                                 self.transfer_stock(line, location_dest_id)
                                 new_stock_quant = self.env['stock.quant'].search([('product_id', '=', line.rx_stock_quant_id.product_id.id), ('location_id.warehouse_id', '=', line.rx_location_id.warehouse_id.id), ('location_id.usage', '=', 'transit')], limit=1)
