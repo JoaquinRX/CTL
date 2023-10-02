@@ -7,6 +7,7 @@
             <field name="arch" type="xml">
                 <field name="partner_id" attrs="{'invisible': [('rx_is_warehouse', '==', True)]}"/>
                 <field name="parent_id" position="after">
+                    <field name="rx_stock_from_other_warehouse"/>
                     <field name="rx_order_type"/>
                     <field name="rx_who_returns" attrs="{'invisible': [('rx_order_type', '!=', 'returns')]}"/>
                     <field name="rx_origin_warehouse" attrs="{'invisible': [('rx_order_type', '!=', 'returns')]}"/>

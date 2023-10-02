@@ -80,6 +80,7 @@ class TaskInherit(models.Model):
 
     rx_is_warehouse = fields.Boolean(string="Is warehouse", related='project_id.rx_is_warehouse', readonly=True)
     rx_warehouse_id = fields.Many2one(related='project_id.rx_warehouse_id', readonly=True)
+    rx_stock_from_other_warehouse = fields.Boolean(string="Stock from other warehouse")
     rx_available_stock_ids = fields.Many2many('stock.quant')
     rx_total_count = fields.Integer(compute='_compute_total_count', string='Total:')
 
@@ -153,7 +154,7 @@ class TaskInherit(models.Model):
     def _onchange_clear_task_order_line_ids(self):
         self.rx_task_order_line_ids = [(5, 0, 0)]
 
-    @api.onchange('rx_task_order_line_ids', 'rx_order_type', 'rx_who_returns', 'rx_origin_warehouse')
+    @api.onchange('rx_task_order_line_ids', 'rx_order_type', 'rx_who_returns', 'rx_origin_warehouse', 'rx_stock_from_other_warehouse')
     def _onchange_task_quant_ids(self):
         quant_model = self.env['stock.quant']
         stock_quants = self.env['stock.quant']
@@ -162,7 +163,10 @@ class TaskInherit(models.Model):
         who_returns = self.rx_who_returns
         warehouse_id = self.rx_warehouse_id.id
 
-        if order_type in ['re-stock deposit', 'assets request']:
+        if self.rx_stock_from_other_warehouse:
+            stock_quants = quant_model.search([])
+
+        elif order_type in ['re-stock deposit', 'assets request']:
             stock_quants = quant_model.search([('location_id.warehouse_id', '=', warehouse_id), ('location_id.usage', '!=', 'transit'), ('available_quantity', '>', 0)])
 
         elif order_type == 'returns':
@@ -597,6 +601,8 @@ class TaskInherit(models.Model):
         return all(line.rx_is_done for line in self.rx_task_order_line_ids)
 
     def check_available_quant(self):
+        if self.rx_stock_from_other_warehouse:
+            return True
         return all(line.rx_available_quant >= line.rx_qty for line in self.rx_task_order_line_ids)
 
     def check_all_lines_final_location(self):
