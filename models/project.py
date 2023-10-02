@@ -183,22 +183,22 @@ class TaskInherit(models.Model):
         if (self.rx_order_type == 'assets request'):
             #  change stage limitations
             if (self._origin.stage_id.name == 'Finalizado'):
-                return self.revert_stage_change(title='Pedido de activos', message=f'La orden ya esta en el estado {self._origin.stage_id.name}')
+                raise UserError(f'La orden ya esta en el estado {self._origin.stage_id.name}')
             elif (not self.check_available_quant()):
-                return self.revert_stage_change(title='Pedido de activos', message='La cantidad seleccionada no puede ser mayor a la disponible.')
+                raise UserError('La cantidad seleccionada no puede ser mayor a la disponible')
             elif (self.stage_id.name == 'Nuevo'):
                 if (not self._origin.stage_id.name == 'Pick'):
-                    return self.revert_stage_change(title='Pedido de activos', message=f'La orden no puede volver a el estado {self.stage_id.name}')
+                    raise UserError(f'La orden no puede volver a el estado {self.stage_id.name}')
                 else:
                     return
             elif (self.stage_id.name == 'Pick'):
                 return
             elif (not self.check_all_lines_done()):
-                return self.revert_stage_change(title='Pedido de activos', message='Todas las lineas tienen que estar confirmadas para poder continuar.')
+                raise UserError('Todas las lineas tienen que estar confirmadas para poder continuar')
             elif (self.stage_id.name == 'Pendiente recibir' or self.stage_id.name == 'Verificacion tecnica'):
-                return self.revert_stage_change(title='Pedido de activos', message=f'No puede pasar una orden de pedido de activos a la etapa de {self.stage_id.name}')
+                raise UserError(f'No puede pasar una orden de pedido de activos a la etapa de {self.stage_id.name}')
             elif (not self.check_all_lines_final_location()):
-                return self.revert_stage_change(title='Pedido de activos', message='Todas las lineas tienen que tener una ubicacion final')
+                raise UserError('Todas las lineas tienen que tener una ubicacion final')
 
             # change stage logic
             if (self.stage_id.name in ['Mesa de envios', 'Pendiente retirar', 'Mesa de entrada', 'En transito']):
@@ -240,20 +240,20 @@ class TaskInherit(models.Model):
         if (self.rx_order_type == 'returns'):
             #  change stage limitations
             if (self._origin.stage_id.name == 'Finalizado'):
-                return self.revert_stage_change(title='Devolucion', message=f'La orden ya esta en el estado {self._origin.stage_id.name}')
+                raise UserError(f'La orden ya esta en el estado {self._origin.stage_id.name}')
             elif (not self.check_available_quant()):
-                return self.revert_stage_change(title='Devolucion', message='La cantidad seleccionada no puede ser mayor a la disponible.')
+                raise UserError('La cantidad seleccionada no puede ser mayor a la disponible')
             elif (self.stage_id.name == 'Nuevo'):
                 if (not self._origin.stage_id.name == 'Pick'):
-                    return self.revert_stage_change(title='Devolucion', message=f'La orden no puede volver a el estado {self.stage_id.name}')
+                    raise UserError(f'La orden no puede volver a el estado {self.stage_id.name}')
                 else:
                     return
             elif (self.stage_id.name == 'Pick'):
                 return
             elif (not self.check_all_lines_done() and self.stage_id.name not in ['Pendiente retirar', 'Mesa de envios']):
-                return self.revert_stage_change(title='Devolucion', message='Todas las lineas tienen que estar confirmadas para poder continuar.')
+                raise UserError('Todas las lineas tienen que estar confirmadas para poder continuar')
             elif (not self.check_all_lines_final_location()):
-                return self.revert_stage_change(title='Devolucion', message='Todas las lineas tienen que tener una ubicacion final')
+                raise UserError('Todas las lineas tienen que tener una ubicacion final')
 
             # change stage logic
             if (self.rx_is_sub_order):
@@ -286,7 +286,7 @@ class TaskInherit(models.Model):
                         line.write({'rx_stock_quant_id': new_stock_quant.id})
 
                     if (not self.rx_sub_order_id and not self.rx_who_returns == 'user/collaborator'):
-                        return self.revert_stage_change(title='Devolucion', message='No puede finalizar una orden sin antes crear una sub-orden')
+                        raise UserError('No puede finalizar una orden sin antes crear una sub-orden')
                     self.rx_sub_order_id.write({'rx_task_order_line_ids': [(5, 0, 0)]})
                     self.rx_sub_order_id.write({
                         'rx_task_order_line_ids': [(0, 0, {
@@ -304,7 +304,7 @@ class TaskInherit(models.Model):
                 if (not self.rx_sub_order_id):
                     if (self.stage_id.name in ['Mesa de envios', 'Pendiente retirar', 'Mesa de entrada', 'En transito'] and not self.rx_who_returns == 'user/collaborator'):
                         if (not self.rx_origin_warehouse):
-                            return self.revert_stage_change(title='Devolucion', message='Debe seleccionar un almacén de destino.')
+                            raise UserError('Debe seleccionar un almacén de destino')
 
                         def transfer_prod():
                             location_dest_id = self.env['stock.location'].search([('warehouse_id', '=', self.rx_warehouse_id.id), ('usage', '=', 'transit'), ('name', '=', self.stage_id.name)], limit=1)
@@ -372,20 +372,20 @@ class TaskInherit(models.Model):
         if (self.rx_order_type == 'assets purchase'):
             #  change stage limitations
             if (self._origin.stage_id.name == 'Finalizado'):
-                return self.revert_stage_change(title='Compra de activos', message=f'La orden ya esta en el estado {self._origin.stage_id.name}')
+                raise UserError(f'La orden ya esta en el estado {self._origin.stage_id.name}')
             elif (self.stage_id.name == 'Nuevo'):
                 if (not self._origin.stage_id.name == 'Pick'):
-                    return self.revert_stage_change(title='Compra de activos', message=f'La orden no puede volver a el estado {self.stage_id.name}')
+                    raise UserError(f'La orden no puede volver a el estado {self.stage_id.name}')
                 else:
                     return
             elif (self.stage_id.name == 'Pick'):
                 return
             elif (not self.check_all_lines_done() and self.stage_id.name not in ['Pendiente recibir', 'Pendiente retirar', 'Mesa de envios']):
-                return self.revert_stage_change(title='Compra de activos', message='Todas las lineas tienen que estar confirmadas para poder continuar.')
+                raise UserError('Todas las lineas tienen que estar confirmadas para poder continuar')
             elif (self.stage_id.name == 'Verificacion tecnica'):
-                return self.revert_stage_change(title='Compra de activos', message=f'No puede pasar una orden compra de activos a la etapa de {self.stage_id.name}')
+                raise UserError(f'No puede pasar una orden compra de activos a la etapa de {self.stage_id.name}')
             elif (not self.check_all_lines_final_location()):
-                return self.revert_stage_change(title='Re-stock', message='Todas las lineas tienen que tener una ubicacion final')
+                raise UserError('Todas las lineas tienen que tener una ubicacion final')
 
             # change stage logic
             if (self.stage_id.name in ['Mesa de envios', 'Pendiente retirar', 'Mesa de entrada', 'En transito']):
@@ -429,29 +429,29 @@ class TaskInherit(models.Model):
         if (self.rx_order_type == 're-stock deposit'):
             #  change stage limitations
             if (self._origin.stage_id.name == 'Finalizado'):
-                return self.revert_stage_change(title='Re-stock', message=f'La orden ya esta en el estado {self._origin.stage_id.name}')
+                raise UserError(f'La orden ya esta en el estado {self._origin.stage_id.name}')
             elif (not self.check_available_quant()):
-                return self.revert_stage_change(title='Re-stock', message='La cantidad seleccionada no puede ser mayor a la disponible.')
+                raise UserError('La cantidad seleccionada no puede ser mayor a la disponible')
             elif (self.stage_id.name == 'Nuevo'):
                 if (not self._origin.stage_id.name == 'Pick'):
-                    return self.revert_stage_change(title='Re-stock', message=f'La orden no puede volver a el estado {self.stage_id.name}')
+                    raise UserError(f'La orden no puede volver a el estado {self.stage_id.name}')
                 else:
                     return
             elif (self.stage_id.name == 'Pick'):
                 return
             elif (not self.check_all_lines_done()):
-                return self.revert_stage_change(title='Re-stock', message='Todas las lineas tienen que estar confirmadas para poder continuar.')
+                raise UserError('Todas las lineas tienen que estar confirmadas para poder continuar')
             elif (self.stage_id.name == 'Pendiente recibir' or self.stage_id.name == 'Verificacion tecnica'):
-                return self.revert_stage_change(title='Re-stock', message=f'No puede pasar una orden de re-stock a la etapa de {self.stage_id.name}')
+                raise UserError(f'No puede pasar una orden de re-stock a la etapa de {self.stage_id.name}')
             elif (not self.check_all_lines_final_location()):
-                return self.revert_stage_change(title='Re-stock', message='Todas las lineas tienen que tener una ubicacion final')
+                raise UserError('Todas las lineas tienen que tener una ubicacion final')
             elif (not self.rx_destination_warehouse):
-                return self.revert_stage_change(title='Re-stock', message='Debe seleccionar un almacén de destino para crear la sub orden')
+                raise UserError('Debe seleccionar un almacén de destino para crear la sub orden')
 
             # change stage logic
             if (self.rx_is_sub_order):
                 if (not self.stage_id.name == 'Finalizado'):
-                    return self.revert_stage_change(title='Re-stock', message='La sub-orden solo puede finalizarse')
+                    raise UserError('La sub-orden solo puede finalizarse')
                 else:
                     for line in self.rx_task_order_line_ids:
                         self.transfer_stock(line, line.rx_final_location)
@@ -476,7 +476,7 @@ class TaskInherit(models.Model):
                 if (not self.rx_sub_order_id):
                     if (self.stage_id.name in ['Mesa de envios', 'Pendiente retirar', 'Mesa de entrada', 'En transito']):
                         if (not self.rx_destination_warehouse):
-                            return self.revert_stage_change(title='Re-stock', message='Debe seleccionar un almacén de destino.')
+                            raise UserError('Debe seleccionar un almacén de destino')
 
                         def transfer_prod():
                             location_dest_id = self.env['stock.location'].search([('warehouse_id', '=', self.rx_warehouse_id.id), ('usage', '=', 'transit'), ('name', '=', self.stage_id.name)], limit=1)
@@ -607,10 +607,6 @@ class TaskInherit(models.Model):
 
     def check_all_lines_final_location(self):
         return all(line.rx_final_location for line in self.rx_task_order_line_ids)
-
-    # needs to be returned. return self.revert_stage_change('', '')
-    def revert_stage_change(self, title, message):
-        raise UserError((message))
 
     @api.depends('rx_task_order_line_ids')
     def _compute_total_count(self):
