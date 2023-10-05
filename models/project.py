@@ -210,9 +210,9 @@ class TaskInherit(models.Model):
                     for line in self.rx_task_order_line_ids:
                         self.transfer_stock(line, location_dest_id)
                         if line.rx_lot_ids:
-                            new_stock_quant = self.env['stock.quant'].search([('product_id', '=', line.rx_stock_quant_id.product_id.id), ('location_id.warehouse_id', '=', line.rx_location_id.warehouse_id.id), ('location_id.usage', '=', 'transit'), ('lot_id', 'in', line.rx_lot_ids.ids)], limit=1)
+                            new_stock_quant = self.env['stock.quant'].search([('product_id', '=', line.rx_stock_quant_id.product_id.id), ('location_id', '=', location_dest_id.id), ('lot_id', 'in', line.rx_lot_ids.ids)], limit=1)
                         else:
-                            new_stock_quant = self.env['stock.quant'].search([('product_id', '=', line.rx_stock_quant_id.product_id.id), ('location_id.warehouse_id', '=', line.rx_location_id.warehouse_id.id), ('location_id.usage', '=', 'transit')], limit=1)
+                            new_stock_quant = self.env['stock.quant'].search([('product_id', '=', line.rx_stock_quant_id.product_id.id), ('location_id', '=', location_dest_id.id)], limit=1)
                         line.write({'rx_stock_quant_id': new_stock_quant.id})
 
                 if self.stage_id.name == 'Mesa de envios':
@@ -264,28 +264,29 @@ class TaskInherit(models.Model):
             # change stage logic
             if (self.rx_is_sub_order):
                 if (self.stage_id.name == 'Finalizado'):
-                    location_dest_id = self.env['stock.location'].search([('warehouse_id', '=', self.rx_parent_order_id.rx_warehouse_id.id), ('usage', '=', 'transit')], limit=1)
-                    for line in self.rx_task_order_line_ids:
-                        self.transfer_stock(line, location_dest_id)
-                        if line.rx_lot_ids:
-                            new_stock_quant = self.env['stock.quant'].search([('product_id', '=', line.rx_stock_quant_id.product_id.id), ('location_id', '=', location_dest_id.id), ('lot_id', 'in', line.rx_lot_ids.ids)], limit=1)
-                        else:
-                            new_stock_quant = self.env['stock.quant'].search([('product_id', '=', line.rx_stock_quant_id.product_id.id), ('location_id', '=', location_dest_id.id)], limit=1)
-                        line.write({'rx_stock_quant_id': new_stock_quant.id})
+                    print('sub-order finish')
+                    # location_dest_id = self.env['stock.location'].search([('warehouse_id', '=', self.rx_parent_order_id.rx_warehouse_id.id), ('usage', '=', 'transit')], limit=1)
+                    # for line in self.rx_task_order_line_ids:
+                    #     self.transfer_stock(line, location_dest_id)
+                    #     if line.rx_lot_ids:
+                    #         new_stock_quant = self.env['stock.quant'].search([('product_id', '=', line.rx_stock_quant_id.product_id.id), ('location_id', '=', location_dest_id.id), ('lot_id', 'in', line.rx_lot_ids.ids)], limit=1)
+                    #     else:
+                    #         new_stock_quant = self.env['stock.quant'].search([('product_id', '=', line.rx_stock_quant_id.product_id.id), ('location_id', '=', location_dest_id.id)], limit=1)
+                    #     line.write({'rx_stock_quant_id': new_stock_quant.id})
 
-                    self.rx_parent_order_id.write({'rx_task_order_line_ids': [(5, 0, 0)]})
-                    self.rx_parent_order_id.write({
-                        'rx_task_order_line_ids': [(0, 0, {
-                            'rx_task_id': self.rx_parent_order_id.id,
-                            'rx_is_done': line.rx_is_done,
-                            'rx_stock_quant_id': line.rx_stock_quant_id.id,
-                            'rx_location_id': line.rx_location_id.id,
-                            'rx_final_location': line.rx_final_location.id,
-                            'rx_qty': line.rx_qty,
-                            'rx_lot_ids': line.rx_lot_ids.ids
-                        }) for line in self.rx_task_order_line_ids],
-                    })
-                    self._force_change_stage('Finalizado')
+                    # self.rx_parent_order_id.write({'rx_task_order_line_ids': [(5, 0, 0)]})
+                    # self.rx_parent_order_id.write({
+                    #     'rx_task_order_line_ids': [(0, 0, {
+                    #         'rx_task_id': self.rx_parent_order_id.id,
+                    #         'rx_is_done': line.rx_is_done,
+                    #         'rx_stock_quant_id': line.rx_stock_quant_id.id,
+                    #         'rx_location_id': line.rx_location_id.id,
+                    #         'rx_final_location': line.rx_final_location.id,
+                    #         'rx_qty': line.rx_qty,
+                    #         'rx_lot_ids': line.rx_lot_ids.ids
+                    #     }) for line in self.rx_task_order_line_ids],
+                    # })
+                    # self._force_change_stage('Finalizado')
 
             else:  # is not sub-order
                 if (self.stage_id.name == 'Finalizado'):
@@ -328,7 +329,6 @@ class TaskInherit(models.Model):
                                     new_stock_quant = self.env['stock.quant'].search([('product_id', '=', line.rx_stock_quant_id.product_id.id), ('location_id', '=', location_dest_id.id), ('lot_id', 'in', line.rx_lot_ids.ids)], limit=1)
                                 else:
                                     new_stock_quant = self.env['stock.quant'].search([('product_id', '=', line.rx_stock_quant_id.product_id.id), ('location_id', '=', location_dest_id.id)], limit=1)
-                                new_stock_quant = self.env['stock.quant'].search([('product_id', '=', line.rx_stock_quant_id.product_id.id), ('location_id', '=', location_dest_id.id)], limit=1)
                                 line.write({'rx_stock_quant_id': new_stock_quant.id})
 
                             project_id = self.env['project.project'].search([('rx_warehouse_id', '=', self.rx_origin_warehouse.id)], limit=1)
@@ -418,9 +418,9 @@ class TaskInherit(models.Model):
                             return
                         self.transfer_product(line, location_origin, location_dest_id)
                         if line.rx_lot_ids:
-                            new_stock_quant = self.env['stock.quant'].search([('product_id', '=', line.rx_product_id.id), ('location_id.warehouse_id', '=', location_dest_id.warehouse_id.id), ('location_id.usage', '=', 'transit'), ('lot_id', 'in', line.rx_lot_ids.ids)], limit=1)
+                            new_stock_quant = self.env['stock.quant'].search([('product_id', '=', line.rx_product_id.id), ('location_id', '=', location_dest_id.id), ('lot_id', 'in', line.rx_lot_ids.ids)], limit=1)
                         else:
-                            new_stock_quant = self.env['stock.quant'].search([('product_id', '=', line.rx_product_id.id), ('location_id.warehouse_id', '=', location_dest_id.warehouse_id.id), ('location_id.usage', '=', 'transit')], limit=1)
+                            new_stock_quant = self.env['stock.quant'].search([('product_id', '=', line.rx_product_id.id), ('location_id', '=', location_dest_id.id)], limit=1)
                         line.write({'rx_stock_quant_id': new_stock_quant.id})
 
                 if self.stage_id.name == 'Mesa de envios':
@@ -513,9 +513,9 @@ class TaskInherit(models.Model):
                             for line in self.rx_task_order_line_ids:
                                 self.transfer_stock(line, location_dest_id)
                                 if line.rx_lot_ids:
-                                    new_stock_quant = self.env['stock.quant'].search([('product_id', '=', line.rx_stock_quant_id.product_id.id), ('location_id.warehouse_id', '=', line.rx_location_id.warehouse_id.id), ('location_id.usage', '=', 'transit'), ('lot_id', 'in', line.rx_lot_ids.ids)], limit=1)
+                                    new_stock_quant = self.env['stock.quant'].search([('product_id', '=', line.rx_stock_quant_id.product_id.id), ('location_id', '=', location_dest_id.id), ('lot_id', 'in', line.rx_lot_ids.ids)], limit=1)
                                 else:
-                                    new_stock_quant = self.env['stock.quant'].search([('product_id', '=', line.rx_stock_quant_id.product_id.id), ('location_id.warehouse_id', '=', line.rx_location_id.warehouse_id.id), ('location_id.usage', '=', 'transit')], limit=1)
+                                    new_stock_quant = self.env['stock.quant'].search([('product_id', '=', line.rx_stock_quant_id.product_id.id), ('location_id', '=', location_dest_id.id)], limit=1)
                                 line.write({'rx_stock_quant_id': new_stock_quant.id})
 
                             project_id = self.env['project.project'].search([('rx_warehouse_id', '=', self.rx_destination_warehouse.id)], limit=1)
