@@ -200,7 +200,9 @@ class TaskInherit(models.Model):
                 for line in self.rx_task_order_line_ids:
                     line.rx_final_location = self.rx_final_location
 
-    @api.onchange("rx_order_type", "rx_who_returns", "rx_origin_warehouse")
+    @api.onchange(
+        "rx_order_type", "rx_who_returns", "rx_origin_warehouse", "rx_partner_id"
+    )
     def _onchange_clear_task_order_line_ids(self):
         self.rx_task_order_line_ids = [(5, 0, 0)]
 
@@ -210,6 +212,7 @@ class TaskInherit(models.Model):
         "rx_who_returns",
         "rx_origin_warehouse",
         "rx_stock_from_other_warehouse",
+        "rx_partner_id",
     )
     def _onchange_task_quant_ids(self):
         quant_model = self.env["stock.quant"]
@@ -237,6 +240,7 @@ class TaskInherit(models.Model):
                     [
                         ("location_id.usage", "=", "customer"),
                         ("available_quantity", ">", 0),
+                        ("owner_id", "=", self.rx_partner_id.id),
                     ]
                 )
             elif who_returns in ["crum", "node"]:
@@ -447,6 +451,7 @@ class TaskInherit(models.Model):
 
             else:  # is not sub-order
                 if self.stage_id.name == "Finalizado":
+                    self.unassign_owner()
                     for line in self.rx_task_order_line_ids:
                         self.transfer_stock(line, line.rx_final_location)
                         if line.rx_lot_ids:
@@ -521,6 +526,7 @@ class TaskInherit(models.Model):
                             raise UserError("Debe seleccionar un almacén de destino")
 
                         def transfer_prod():
+                            self.unassign_owner()
                             location_dest_id = self.env["stock.location"].search(
                                 [
                                     ("warehouse_id", "=", self.rx_warehouse_id.id),
@@ -652,6 +658,7 @@ class TaskInherit(models.Model):
                                 ],
                                 limit=1,
                             )
+                        self.unassign_owner()
                         for line in self.rx_task_order_line_ids:
                             self.transfer_stock(line, location_dest_id)
                             if line.rx_lot_ids:
@@ -1083,6 +1090,55 @@ class TaskInherit(models.Model):
                         }
                     )
 
+                    line.write({"rx_stock_quant_id": new_quant.id})
+
+    def unassign_owner(self):
+        for line in self.rx_task_order_line_ids:
+            if not line.rx_stock_quant_id.owner_id:
+                continue
+            if line.rx_lot_ids:
+                line.rx_stock_quant_id.write({"owner_id": False})
+            else:
+                no_owner_quant = self.env["stock.quant"].search(
+                    [
+                        ("product_id", "=", line.rx_stock_quant_id.product_id.id),
+                        ("location_id", "=", line.rx_stock_quant_id.location_id.id),
+                        ("owner_id", "=", False),
+                    ],
+                    limit=1,
+                )
+                owned_quant = self.env["stock.quant"].search(
+                    [
+                        ("product_id", "=", line.rx_stock_quant_id.product_id.id),
+                        ("location_id", "=", line.rx_stock_quant_id.location_id.id),
+                        ("owner_id", "=", self.rx_partner_id.id),
+                    ],
+                    limit=1,
+                )
+                if no_owner_quant and owned_quant:
+                    no_owner_quant.write(
+                        {"inventory_quantity": no_owner_quant.quantity + line.rx_qty}
+                    )
+                    no_owner_quant.action_apply_inventory()
+                    owned_quant.write(
+                        {"inventory_quantity": owned_quant.quantity - line.rx_qty}
+                    )
+                    owned_quant.action_apply_inventory()
+                    line.write({"rx_stock_quant_id": no_owner_quant.id})
+
+                if not no_owner_quant and owned_quant:
+                    new_quant = self.env["stock.quant"].create(
+                        {
+                            "product_id": line.rx_stock_quant_id.product_id.id,
+                            "location_id": line.rx_stock_quant_id.location_id.id,
+                            "quantity": line.rx_qty,
+                        }
+                    )
+                    new_quant.action_apply_inventory()
+                    owned_quant.write(
+                        {"inventory_quantity": owned_quant.quantity - line.rx_qty}
+                    )
+                    owned_quant.action_apply_inventory()
                     line.write({"rx_stock_quant_id": new_quant.id})
 
     def transfer_stock(self, line, final_location):

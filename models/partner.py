@@ -35,9 +35,9 @@ class StockLine(models.Model):
 
     rx_partner_id = fields.Many2one("res.partner", string="Partner")
 
-    rx_product_id = fields.Many2one("product.product", string="Product")
-    rx_qty = fields.Integer("Quantity")
-    rx_lot_id = fields.Many2one("stock.production.lot")
+    rx_product_id = fields.Many2one("product.product", string="Producto")
+    rx_qty = fields.Integer("Cantidad")
+    rx_lot_id = fields.Many2one("stock.production.lot", string="Lote/Numero de serie")
 
 
 class Line:
