@@ -384,6 +384,7 @@ class TaskInherit(models.Model):
                             limit=1,
                         )
                     line.write({"rx_stock_quant_id": new_stock_quant.id})
+                    self.assign_owner()
                 self._force_change_stage("Finalizado")
 
     @api.onchange("stage_id")
@@ -1033,6 +1034,56 @@ class TaskInherit(models.Model):
                         if self.stage_id.name == "En transito":
                             transfer_prod()
                             self._force_change_stage("En transito")
+
+    def assign_owner(self):
+        if not self.rx_partner_id:
+            return
+
+        for line in self.rx_task_order_line_ids:
+            if line.rx_lot_ids:
+                line.rx_stock_quant_id.write({"owner_id": self.rx_partner_id.id})
+            else:
+                old_quant = self.env["stock.quant"].search(
+                    [
+                        ("product_id", "=", line.rx_stock_quant_id.product_id.id),
+                        ("location_id", "=", line.rx_stock_quant_id.location_id.id),
+                        ("owner_id", "=", False),
+                    ],
+                    limit=1,
+                )
+                if old_quant:
+                    old_quant.write(
+                        {"inventory_quantity": old_quant.quantity - line.rx_qty}
+                    )
+                    old_quant.action_apply_inventory()
+
+                owned_quant = self.env["stock.quant"].search(
+                    [
+                        ("product_id", "=", line.rx_stock_quant_id.product_id.id),
+                        ("location_id", "=", line.rx_stock_quant_id.location_id.id),
+                        ("owner_id", "=", self.rx_partner_id.id),
+                    ],
+                    limit=1,
+                )
+
+                if owned_quant:
+                    owned_quant.write(
+                        {"inventory_quantity": owned_quant.quantity + line.rx_qty}
+                    )
+                    owned_quant.action_apply_inventory()
+                    line.write({"rx_stock_quant_id": owned_quant.id})
+
+                else:
+                    new_quant = self.env["stock.quant"].create(
+                        {
+                            "product_id": line.rx_stock_quant_id.product_id.id,
+                            "location_id": line.rx_stock_quant_id.location_id.id,
+                            "quantity": line.rx_qty,
+                            "owner_id": self.rx_partner_id.id,
+                        }
+                    )
+
+                    line.write({"rx_stock_quant_id": new_quant.id})
 
     def transfer_stock(self, line, final_location):
         picking_type_id = self.env["stock.picking.type"].search(
