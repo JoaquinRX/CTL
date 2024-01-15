@@ -206,6 +206,25 @@ class TaskInherit(models.Model):
     def _onchange_clear_task_order_line_ids(self):
         self.rx_task_order_line_ids = [(5, 0, 0)]
 
+    @api.onchange("rx_partner_id")
+    def _onchange_partner_id(self):
+        if self.rx_order_type == "returns":
+            if self.rx_who_returns == "user/collaborator":
+                stock_quants = self.env["stock.quant"].search(
+                    [
+                        ("location_id.usage", "=", "customer"),
+                        ("available_quantity", ">", 0),
+                        ("owner_id", "=", self.rx_partner_id.id),
+                    ]
+                )
+                if not stock_quants:
+                    return {
+                        "warning": {
+                            "title": "No se encontró stock asignado al contacto seleccionado",
+                            "message": "No se encontró stock asignado al usuario seleccionado, se habilito la busqueda en todos los contactos.",
+                        }
+                    }
+
     @api.onchange(
         "rx_task_order_line_ids",
         "rx_order_type",
@@ -214,7 +233,7 @@ class TaskInherit(models.Model):
         "rx_stock_from_other_warehouse",
         "rx_partner_id",
     )
-    def _onchange_task_quant_ids(self):
+    def _compute_stock_quant_for_lines(self):
         quant_model = self.env["stock.quant"]
         stock_quants = self.env["stock.quant"]
 
@@ -243,6 +262,13 @@ class TaskInherit(models.Model):
                         ("owner_id", "=", self.rx_partner_id.id),
                     ]
                 )
+                if not stock_quants:
+                    stock_quants = quant_model.search(
+                        [
+                            ("location_id.usage", "=", "customer"),
+                            ("available_quantity", ">", 0),
+                        ]
+                    )
             elif who_returns in ["crum", "node"]:
                 stock_quants = quant_model.search(
                     [

@@ -14,7 +14,8 @@
                     <field name="rx_provider" attrs="{'invisible': [('rx_order_type', '!=', 'assets purchase')]}"/>
                     <field name="rx_destination_warehouse"/>
                     <field name="rx_final_location"/>
-                    <field name="rx_partner_id"/>
+                    <field name="rx_partner_id" string="Usuario/Colaborador"  attrs="{'invisible': [('rx_order_type', '!=', 'returns'), ('rx_who_returns', '!=', 'user/collaborator')]}"/>
+                    <field name="rx_partner_id" string="Usuario/Colaborador"  attrs="{'invisible': [('rx_order_type', '!=', 'assets request')]}"/>
                     <field name="rx_partner_address"/>
                     <field name="rx_is_sub_order" attrs="{'readonly': True, 'invisible': [('rx_order_type', '!=', 'returns'), ('rx_order_type', '!=', 're-stock deposit')]}"/>
                     <field name="rx_parent_order_id" attrs="{'readonly': True, 'invisible': [('rx_order_type', '!=', 'returns'), ('rx_order_type', '!=', 're-stock deposit')]}"/>
