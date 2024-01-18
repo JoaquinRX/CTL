@@ -201,7 +201,11 @@ class TaskInherit(models.Model):
                     line.rx_final_location = self.rx_final_location
 
     @api.onchange(
-        "rx_order_type", "rx_who_returns", "rx_origin_warehouse", "rx_partner_id"
+        "rx_order_type",
+        "rx_who_returns",
+        "rx_origin_warehouse",
+        "rx_partner_id",
+        "rx_stock_from_other_warehouse",
     )
     def _onchange_clear_task_order_line_ids(self):
         self.rx_task_order_line_ids = [(5, 0, 0)]
