@@ -242,7 +242,15 @@ class TaskInherit(models.Model):
         warehouse_id = self.rx_warehouse_id.id
 
         if self.rx_stock_from_other_warehouse:
-            stock_quants = quant_model.search([])
+            if order_type == "returns" and who_returns == "user/collaborator":
+                stock_quants = quant_model.search(
+                    [
+                        ("location_id.usage", "=", "customer"),
+                        ("available_quantity", ">", 0),
+                    ]
+                )
+            else:
+                stock_quants = quant_model.search([])
 
         elif order_type in ["re-stock deposit", "assets request"]:
             stock_quants = quant_model.search(
@@ -255,13 +263,21 @@ class TaskInherit(models.Model):
 
         elif order_type == "returns":
             if who_returns == "user/collaborator":
-                stock_quants = quant_model.search(
-                    [
-                        ("location_id.usage", "=", "customer"),
-                        ("available_quantity", ">", 0),
-                        ("owner_id", "=", self.rx_partner_id.id),
-                    ]
-                )
+                if self.rx_partner_id:
+                    stock_quants = quant_model.search(
+                        [
+                            ("location_id.usage", "=", "customer"),
+                            ("available_quantity", ">", 0),
+                            ("owner_id", "=", self.rx_partner_id.id),
+                        ]
+                    )
+                else:
+                    stock_quants = quant_model.search(
+                        [
+                            ("location_id.usage", "=", "customer"),
+                            ("available_quantity", ">", 0),
+                        ]
+                    )
                 if not stock_quants:
                     stock_quants = quant_model.search(
                         [
