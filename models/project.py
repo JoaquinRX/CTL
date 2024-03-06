@@ -365,7 +365,12 @@ class TaskInherit(models.Model):
                         if line.rx_lot_ids:
                             new_stock_quant = self.env["stock.quant"].search(
                                 [
-                                    ("available_quantity", ">", 0),
+                                    (
+                                        "product_id",
+                                        "=",
+                                        line.rx_stock_quant_id.product_id.id,
+                                    ),
+                                    ("location_id", "=", location_dest_id.id),
                                     ("lot_id", "in", line.rx_lot_ids.ids),
                                 ],
                                 limit=1,
@@ -406,7 +411,12 @@ class TaskInherit(models.Model):
                     if line.rx_lot_ids:
                         new_stock_quant = self.env["stock.quant"].search(
                             [
-                                ("available_quantity", ">", 0),
+                                (
+                                    "product_id",
+                                    "=",
+                                    line.rx_stock_quant_id.product_id.id,
+                                ),
+                                ("location_id", "=", line.rx_final_location.id),
                                 ("lot_id", "in", line.rx_lot_ids.ids),
                             ],
                             limit=1,
@@ -493,7 +503,12 @@ class TaskInherit(models.Model):
                         if line.rx_lot_ids:
                             new_stock_quant = self.env["stock.quant"].search(
                                 [
-                                    ("available_quantity", ">", 0),
+                                    (
+                                        "product_id",
+                                        "=",
+                                        line.rx_stock_quant_id.product_id.id,
+                                    ),
+                                    ("location_id", "=", line.rx_final_location.id),
                                     ("lot_id", "in", line.rx_lot_ids.ids),
                                 ],
                                 limit=1,
@@ -583,7 +598,12 @@ class TaskInherit(models.Model):
                                 if line.rx_lot_ids:
                                     new_stock_quant = self.env["stock.quant"].search(
                                         [
-                                            ("available_quantity", ">", 0),
+                                            (
+                                                "product_id",
+                                                "=",
+                                                line.rx_stock_quant_id.product_id.id,
+                                            ),
+                                            ("location_id", "=", location_dest_id.id),
                                             ("lot_id", "in", line.rx_lot_ids.ids),
                                         ],
                                         limit=1,
@@ -690,7 +710,12 @@ class TaskInherit(models.Model):
                             if line.rx_lot_ids:
                                 new_stock_quant = self.env["stock.quant"].search(
                                     [
-                                        ("available_quantity", ">", 0),
+                                        (
+                                            "product_id",
+                                            "=",
+                                            line.rx_stock_quant_id.product_id.id,
+                                        ),
+                                        ("location_id", "=", location_dest_id.id),
                                         ("lot_id", "in", line.rx_lot_ids.ids),
                                     ],
                                     limit=1,
@@ -777,7 +802,8 @@ class TaskInherit(models.Model):
                         if line.rx_lot_ids:
                             new_stock_quant = self.env["stock.quant"].search(
                                 [
-                                    ("available_quantity", ">", 0),
+                                    ("product_id", "=", line.rx_product_id.id),
+                                    ("location_id", "=", location_dest_id.id),
                                     ("lot_id", "in", line.rx_lot_ids.ids),
                                 ],
                                 limit=1,
@@ -814,7 +840,12 @@ class TaskInherit(models.Model):
                     if line.rx_lot_ids:
                         new_stock_quant = self.env["stock.quant"].search(
                             [
-                                ("available_quantity", ">", 0),
+                                (
+                                    "product_id",
+                                    "=",
+                                    line.rx_stock_quant_id.product_id.id,
+                                ),
+                                ("location_id", "=", line.rx_final_location.id),
                                 ("lot_id", "in", line.rx_lot_ids.ids),
                             ],
                             limit=1,
@@ -883,7 +914,12 @@ class TaskInherit(models.Model):
                         if line.rx_lot_ids:
                             new_stock_quant = self.env["stock.quant"].search(
                                 [
-                                    ("available_quantity", ">", 0),
+                                    (
+                                        "product_id",
+                                        "=",
+                                        line.rx_stock_quant_id.product_id.id,
+                                    ),
+                                    ("location_id", "=", line.rx_final_location.id),
                                     ("lot_id", "in", line.rx_lot_ids.ids),
                                 ],
                                 limit=1,
@@ -960,7 +996,12 @@ class TaskInherit(models.Model):
                                 if line.rx_lot_ids:
                                     new_stock_quant = self.env["stock.quant"].search(
                                         [
-                                            ("available_quantity", ">", 0),
+                                            (
+                                                "product_id",
+                                                "=",
+                                                line.rx_stock_quant_id.product_id.id,
+                                            ),
+                                            ("location_id", "=", location_dest_id.id),
                                             ("lot_id", "in", line.rx_lot_ids.ids),
                                         ],
                                         limit=1,
